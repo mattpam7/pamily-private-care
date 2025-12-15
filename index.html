@@ -482,6 +482,9 @@
                             <p style={{opacity: 0.8, lineHeight: 1.7}}>
                                 Connecting families with trusted, qualified nurses for personalized home care.
                             </p>
+                            <p style={{marginTop: '1rem'}}>
+                                <a href="mailto:support@pamilyprivatecare.com" style={{opacity: 0.9}}>📧 support@pamilyprivatecare.com</a>
+                            </p>
                         </div>
                         <div>
                             <h4>For Patients</h4>
@@ -503,7 +506,7 @@
                         </div>
                     </div>
                     <div className="footer-bottom">
-                        © 2024 Pamily Private Care. All rights reserved.
+                        © 2024 <span onClick={() => setPage('admin')} style={{cursor: 'default'}}>Pamily Private Care</span>. All rights reserved.
                     </div>
                 </footer>
             );
@@ -2416,6 +2419,308 @@
             );
         }
 
+        // ============ ADMIN PAGE ============
+        function AdminPage({ setPage, user }) {
+            const [adminPassword, setAdminPassword] = useState('');
+            const [isAuthed, setIsAuthed] = useState(false);
+            const [activeTab, setActiveTab] = useState('nurses');
+            const [nurses, setNurses] = useState([]);
+            const [patients, setPatients] = useState([]);
+            const [appointments, setAppointments] = useState([]);
+            const [contactMessages, setContactMessages] = useState([]);
+            const [loading, setLoading] = useState(false);
+
+            // CHANGE THIS PASSWORD!
+            const ADMIN_PASSWORD = 'pamilyadmin2024';
+
+            async function loadData() {
+                setLoading(true);
+                
+                const { data: nursesData } = await supabase
+                    .from('nurses')
+                    .select('*, user:users(first_name, last_name, email)')
+                    .order('created_at', { ascending: false });
+                setNurses(nursesData || []);
+
+                const { data: patientsData } = await supabase
+                    .from('patients')
+                    .select('*, user:users(first_name, last_name, email)')
+                    .order('created_at', { ascending: false });
+                setPatients(patientsData || []);
+
+                const { data: appointmentsData } = await supabase
+                    .from('appointments')
+                    .select('*, nurse:nurses(*, user:users(first_name, last_name)), patient:patients(*, user:users(first_name, last_name))')
+                    .order('created_at', { ascending: false });
+                setAppointments(appointmentsData || []);
+
+                const { data: messagesData } = await supabase
+                    .from('contact_messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                setContactMessages(messagesData || []);
+
+                setLoading(false);
+            }
+
+            function handleLogin(e) {
+                e.preventDefault();
+                if (adminPassword === ADMIN_PASSWORD) {
+                    setIsAuthed(true);
+                    loadData();
+                } else {
+                    alert('Wrong password');
+                }
+            }
+
+            async function approveNurse(nurseId) {
+                await supabase.from('nurses').update({ profile_approved: true }).eq('id', nurseId);
+                setNurses(nurses.map(n => n.id === nurseId ? {...n, profile_approved: true} : n));
+            }
+
+            async function rejectNurse(nurseId) {
+                await supabase.from('nurses').update({ profile_approved: false }).eq('id', nurseId);
+                setNurses(nurses.map(n => n.id === nurseId ? {...n, profile_approved: false} : n));
+            }
+
+            async function verifyInsurance(patientId) {
+                await supabase.from('patients').update({ insurance_verified: true }).eq('id', patientId);
+                setPatients(patients.map(p => p.id === patientId ? {...p, insurance_verified: true} : p));
+            }
+
+            async function markMessageRead(msgId) {
+                await supabase.from('contact_messages').update({ read: true }).eq('id', msgId);
+                setContactMessages(contactMessages.map(m => m.id === msgId ? {...m, read: true} : m));
+            }
+
+            if (!isAuthed) {
+                return (
+                    <div className="page" style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        <div className="card" style={{maxWidth: '400px', width: '100%'}}>
+                            <h1 style={{textAlign: 'center', marginBottom: '1rem'}}>🔐 Admin Access</h1>
+                            <form onSubmit={handleLogin}>
+                                <div className="form-group">
+                                    <label>Admin Password</label>
+                                    <input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
+                                </div>
+                                <button type="submit" className="btn btn-primary" style={{width: '100%'}}>Enter Admin Panel</button>
+                            </form>
+                            <p style={{textAlign: 'center', marginTop: '1rem'}}>
+                                <a href="#" onClick={() => setPage('home')} style={{color: 'var(--text-light)'}}>← Back to site</a>
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                            <h1>🛠️ Admin Dashboard</h1>
+                            <button className="btn btn-secondary" onClick={() => setPage('home')}>← Back to Site</button>
+                        </div>
+
+                        {/* Stats */}
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem'}}>
+                            <div className="card" style={{textAlign: 'center', padding: '1rem', cursor: 'pointer', border: activeTab === 'nurses' ? '2px solid var(--primary)' : 'none'}} onClick={() => setActiveTab('nurses')}>
+                                <div style={{fontSize: '2rem', fontWeight: '700'}}>{nurses.length}</div>
+                                <div style={{color: 'var(--text-light)'}}>Nurses</div>
+                                <div style={{color: 'var(--warning)', fontSize: '0.85rem'}}>{nurses.filter(n => !n.profile_approved).length} pending</div>
+                            </div>
+                            <div className="card" style={{textAlign: 'center', padding: '1rem', cursor: 'pointer', border: activeTab === 'patients' ? '2px solid var(--primary)' : 'none'}} onClick={() => setActiveTab('patients')}>
+                                <div style={{fontSize: '2rem', fontWeight: '700'}}>{patients.length}</div>
+                                <div style={{color: 'var(--text-light)'}}>Patients</div>
+                                <div style={{color: 'var(--warning)', fontSize: '0.85rem'}}>{patients.filter(p => p.insurance_provider && !p.insurance_verified).length} need verification</div>
+                            </div>
+                            <div className="card" style={{textAlign: 'center', padding: '1rem', cursor: 'pointer', border: activeTab === 'appointments' ? '2px solid var(--primary)' : 'none'}} onClick={() => setActiveTab('appointments')}>
+                                <div style={{fontSize: '2rem', fontWeight: '700'}}>{appointments.length}</div>
+                                <div style={{color: 'var(--text-light)'}}>Appointments</div>
+                            </div>
+                            <div className="card" style={{textAlign: 'center', padding: '1rem', cursor: 'pointer', border: activeTab === 'messages' ? '2px solid var(--primary)' : 'none'}} onClick={() => setActiveTab('messages')}>
+                                <div style={{fontSize: '2rem', fontWeight: '700'}}>{contactMessages.length}</div>
+                                <div style={{color: 'var(--text-light)'}}>Messages</div>
+                                <div style={{color: 'var(--error)', fontSize: '0.85rem'}}>{contactMessages.filter(m => !m.read).length} unread</div>
+                            </div>
+                        </div>
+
+                        <button className="btn btn-secondary" onClick={loadData} disabled={loading} style={{marginBottom: '1rem'}}>
+                            {loading ? 'Loading...' : '🔄 Refresh Data'}
+                        </button>
+
+                        {/* Nurses Tab */}
+                        {activeTab === 'nurses' && (
+                            <div className="card">
+                                <h2 style={{marginBottom: '1rem'}}>👩‍⚕️ Nurse Applications</h2>
+                                {nurses.length === 0 ? (
+                                    <p style={{color: 'var(--text-light)'}}>No nurses yet</p>
+                                ) : (
+                                    <div style={{overflowX: 'auto'}}>
+                                        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                            <thead>
+                                                <tr style={{borderBottom: '2px solid var(--border)'}}>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Name</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Email</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Credentials</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Rate</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Status</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {nurses.map(nurse => (
+                                                    <tr key={nurse.id} style={{borderBottom: '1px solid var(--border)'}}>
+                                                        <td style={{padding: '0.75rem'}}>{nurse.user?.first_name} {nurse.user?.last_name}</td>
+                                                        <td style={{padding: '0.75rem'}}>{nurse.user?.email}</td>
+                                                        <td style={{padding: '0.75rem'}}>{nurse.credentials?.join(', ')}</td>
+                                                        <td style={{padding: '0.75rem'}}>${nurse.hourly_rate}/hr</td>
+                                                        <td style={{padding: '0.75rem'}}>
+                                                            <span style={{padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', background: nurse.profile_approved ? 'var(--success)' : 'var(--warning)', color: 'white'}}>
+                                                                {nurse.profile_approved ? 'Approved' : 'Pending'}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{padding: '0.75rem'}}>
+                                                            {!nurse.profile_approved ? (
+                                                                <button className="btn btn-primary" style={{padding: '0.25rem 0.75rem', fontSize: '0.85rem'}} onClick={() => approveNurse(nurse.id)}>✓ Approve</button>
+                                                            ) : (
+                                                                <button className="btn btn-secondary" style={{padding: '0.25rem 0.75rem', fontSize: '0.85rem'}} onClick={() => rejectNurse(nurse.id)}>✗ Revoke</button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Patients Tab */}
+                        {activeTab === 'patients' && (
+                            <div className="card">
+                                <h2 style={{marginBottom: '1rem'}}>👥 Patients</h2>
+                                {patients.length === 0 ? (
+                                    <p style={{color: 'var(--text-light)'}}>No patients yet</p>
+                                ) : (
+                                    <div style={{overflowX: 'auto'}}>
+                                        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                            <thead>
+                                                <tr style={{borderBottom: '2px solid var(--border)'}}>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Name</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Email</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Insurance</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Member ID</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Status</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {patients.map(patient => (
+                                                    <tr key={patient.id} style={{borderBottom: '1px solid var(--border)'}}>
+                                                        <td style={{padding: '0.75rem'}}>{patient.user?.first_name} {patient.user?.last_name}</td>
+                                                        <td style={{padding: '0.75rem'}}>{patient.user?.email}</td>
+                                                        <td style={{padding: '0.75rem'}}>{patient.insurance_provider || '-'}</td>
+                                                        <td style={{padding: '0.75rem'}}>{patient.insurance_member_id || '-'}</td>
+                                                        <td style={{padding: '0.75rem'}}>
+                                                            {patient.insurance_provider ? (
+                                                                <span style={{padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', background: patient.insurance_verified ? 'var(--success)' : 'var(--warning)', color: 'white'}}>
+                                                                    {patient.insurance_verified ? 'Verified' : 'Unverified'}
+                                                                </span>
+                                                            ) : (
+                                                                <span style={{color: 'var(--text-light)'}}>No insurance</span>
+                                                            )}
+                                                        </td>
+                                                        <td style={{padding: '0.75rem'}}>
+                                                            {patient.insurance_provider && !patient.insurance_verified && (
+                                                                <button className="btn btn-primary" style={{padding: '0.25rem 0.75rem', fontSize: '0.85rem'}} onClick={() => verifyInsurance(patient.id)}>✓ Verify</button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Appointments Tab */}
+                        {activeTab === 'appointments' && (
+                            <div className="card">
+                                <h2 style={{marginBottom: '1rem'}}>📅 All Appointments</h2>
+                                {appointments.length === 0 ? (
+                                    <p style={{color: 'var(--text-light)'}}>No appointments yet</p>
+                                ) : (
+                                    <div style={{overflowX: 'auto'}}>
+                                        <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                            <thead>
+                                                <tr style={{borderBottom: '2px solid var(--border)'}}>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Date</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Patient</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Nurse</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Service</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Amount</th>
+                                                    <th style={{textAlign: 'left', padding: '0.75rem'}}>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {appointments.map(apt => (
+                                                    <tr key={apt.id} style={{borderBottom: '1px solid var(--border)'}}>
+                                                        <td style={{padding: '0.75rem'}}>{apt.appointment_date}<br/><span style={{color: 'var(--text-light)', fontSize: '0.85rem'}}>{apt.appointment_time}</span></td>
+                                                        <td style={{padding: '0.75rem'}}>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</td>
+                                                        <td style={{padding: '0.75rem'}}>{apt.nurse?.user?.first_name} {apt.nurse?.user?.last_name}</td>
+                                                        <td style={{padding: '0.75rem'}}>{apt.service_type}</td>
+                                                        <td style={{padding: '0.75rem'}}>${apt.total_amount}</td>
+                                                        <td style={{padding: '0.75rem'}}>
+                                                            <span style={{padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', 
+                                                                background: apt.status === 'confirmed' ? 'var(--success)' : apt.status === 'cancelled' ? 'var(--error)' : 'var(--warning)', 
+                                                                color: 'white'}}>
+                                                                {apt.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Messages Tab */}
+                        {activeTab === 'messages' && (
+                            <div className="card">
+                                <h2 style={{marginBottom: '1rem'}}>📧 Contact Messages</h2>
+                                {contactMessages.length === 0 ? (
+                                    <p style={{color: 'var(--text-light)'}}>No messages yet</p>
+                                ) : (
+                                    <div>
+                                        {contactMessages.map(msg => (
+                                            <div key={msg.id} style={{padding: '1rem', background: msg.read ? 'var(--bg-alt)' : 'rgba(5,150,105,0.1)', borderRadius: '8px', marginBottom: '1rem', border: msg.read ? 'none' : '1px solid var(--success)'}}>
+                                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem'}}>
+                                                    <div>
+                                                        <strong>{msg.name}</strong> <span style={{color: 'var(--text-light)'}}>({msg.email})</span>
+                                                        <p style={{color: 'var(--primary)', fontSize: '0.9rem'}}>{msg.subject}</p>
+                                                    </div>
+                                                    <div style={{textAlign: 'right'}}>
+                                                        <span style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>{new Date(msg.created_at).toLocaleDateString()}</span>
+                                                        {!msg.read && (
+                                                            <button className="btn btn-secondary" style={{padding: '0.2rem 0.5rem', fontSize: '0.75rem', marginLeft: '0.5rem'}} onClick={() => markMessageRead(msg.id)}>Mark Read</button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <p style={{lineHeight: 1.6}}>{msg.message}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         // ============ PRIVACY POLICY PAGE ============
         function PrivacyPage({ setPage }) {
             return (
@@ -2610,18 +2915,32 @@
                 e.preventDefault();
                 setLoading(true);
                 
-                // Save to database (you can also connect this to email service via DNS)
                 try {
+                    // Send email via Web3Forms
+                    await fetch('https://api.web3forms.com/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            access_key: '45263262-b4a4-4ddf-be0a-d91b0008cf61',
+                            subject: `Pamily Contact: ${form.subject}`,
+                            from_name: 'Pamily Private Care',
+                            name: form.name,
+                            email: form.email,
+                            message: form.message
+                        })
+                    });
+
+                    // Also save to database as backup
                     await supabase.from('contact_messages').insert([{
                         name: form.name,
                         email: form.email,
                         subject: form.subject,
                         message: form.message
                     }]);
+                    
                     setSubmitted(true);
                 } catch (err) {
                     console.error('Error:', err);
-                    // Still show success - form data can be handled by your email service
                     setSubmitted(true);
                 } finally {
                     setLoading(false);
@@ -2712,6 +3031,10 @@
 
                             <div>
                                 <div className="card" style={{marginBottom: '1.5rem'}}>
+                                    <h3 style={{marginBottom: '1rem'}}>📧 Email Us</h3>
+                                    <a href="mailto:support@pamilyprivatecare.com" style={{color: 'var(--primary)', fontWeight: '500'}}>support@pamilyprivatecare.com</a>
+                                </div>
+                                <div className="card" style={{marginBottom: '1.5rem'}}>
                                     <h3 style={{marginBottom: '1rem'}}>💬 Quick Help</h3>
                                     <p style={{color: 'var(--text-light)', marginBottom: '1rem'}}>Looking for something specific?</p>
                                     <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
@@ -2784,6 +3107,7 @@
                     {page === 'contact' && <ContactPage setPage={setPage} />}
                     {page === 'privacy' && <PrivacyPage setPage={setPage} />}
                     {page === 'terms' && <TermsPage setPage={setPage} />}
+                    {page === 'admin' && <AdminPage setPage={setPage} user={user} />}
                     
                     <Footer setPage={setPage} />
                 </>
