@@ -451,7 +451,7 @@
                             <span className="nav-link" onClick={() => setPage('home')}>Home</span>
                             <span className="nav-link" onClick={() => setPage('search-choice')}>Find Care</span>
                             <span className="nav-link" onClick={() => setPage('for-nurses')}>For Nurses</span>
-                            <span className="nav-link" onClick={() => setPage('reviews')}>Reviews</span>
+                            <span className="nav-link" onClick={() => setPage('about')}>About</span>
                             {user ? (
                                 <>
                                     <span className="nav-link" onClick={() => setPage('dashboard')}>Dashboard</span>
@@ -492,7 +492,8 @@
                             <h4>Company</h4>
                             <a href="#" onClick={() => setPage('about')}>About Us</a>
                             <a href="#" onClick={() => setPage('contact')}>Contact</a>
-                            <a href="#">Privacy Policy</a>
+                            <a href="#" onClick={() => setPage('privacy')}>Privacy Policy</a>
+                            <a href="#" onClick={() => setPage('terms')}>Terms of Service</a>
                         </div>
                     </div>
                     <div className="footer-bottom">
@@ -1629,6 +1630,7 @@
         function DashboardPage({ user, setPage, setSelectedNurse }) {
             const [nurseData, setNurseData] = useState(null);
             const [patientData, setPatientData] = useState(null);
+            const [appointments, setAppointments] = useState([]);
             const [editingInsurance, setEditingInsurance] = useState(false);
             const [insuranceForm, setInsuranceForm] = useState({});
             const [insuranceList, setInsuranceList] = useState([]);
@@ -1637,7 +1639,17 @@
             useEffect(() => {
                 if (user?.user_type === 'nurse') {
                     supabase.from('nurses').select('*').eq('user_id', user.id).single()
-                        .then(({ data }) => setNurseData(data));
+                        .then(({ data }) => {
+                            setNurseData(data);
+                            if (data) {
+                                // Load nurse appointments
+                                supabase.from('appointments')
+                                    .select('*, patient:patients(*, user:users(first_name, last_name))')
+                                    .eq('nurse_id', data.id)
+                                    .order('appointment_date', { ascending: true })
+                                    .then(({ data: aptData }) => setAppointments(aptData || []));
+                            }
+                        });
                 }
                 if (user?.user_type === 'patient') {
                     supabase.from('patients').select('*').eq('user_id', user.id).single()
@@ -1648,6 +1660,14 @@
                                 memberId: data?.insurance_member_id || '',
                                 groupNumber: data?.insurance_group_number || ''
                             });
+                            if (data) {
+                                // Load patient appointments
+                                supabase.from('appointments')
+                                    .select('*, nurse:nurses(*, user:users(first_name, last_name))')
+                                    .eq('patient_id', data.id)
+                                    .order('appointment_date', { ascending: true })
+                                    .then(({ data: aptData }) => setAppointments(aptData || []));
+                            }
                         });
                     supabase.from('insurance_providers').select('*').then(({ data }) => setInsuranceList(data || []));
                 }
@@ -1735,6 +1755,40 @@
                                 <strong>✅ Profile Approved!</strong>
                                 <p style={{marginTop: '0.5rem'}}>Your profile is live and patients can find you.</p>
                             </div>
+                        )}
+
+                        {user?.user_type === 'nurse' && nurseData && (
+                            <>
+                                <div className="card" style={{marginBottom: '1.5rem'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                                        <h3>📅 My Appointments</h3>
+                                        <button className="btn btn-secondary" onClick={() => setPage('nurse-calendar')}>Manage Availability</button>
+                                    </div>
+                                    {appointments.length === 0 ? (
+                                        <p style={{color: 'var(--text-light)'}}>No upcoming appointments. When patients book you, they'll appear here.</p>
+                                    ) : (
+                                        <div>
+                                            {appointments.map(apt => (
+                                                <div key={apt.id} style={{padding: '1rem', background: 'var(--bg-alt)', borderRadius: '8px', marginBottom: '0.75rem'}}>
+                                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                                                        <div>
+                                                            <strong>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</strong>
+                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.service_type}</p>
+                                                        </div>
+                                                        <div style={{textAlign: 'right'}}>
+                                                            <p style={{fontWeight: '600'}}>{apt.appointment_date}</p>
+                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.appointment_time} • {apt.duration_hours}hr</p>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.75rem'}}>
+                                                        <span className="tag" style={{background: apt.status === 'confirmed' ? 'var(--success)' : apt.status === 'pending' ? 'var(--warning)' : 'var(--bg-alt)', color: apt.status === 'pending' ? 'var(--text)' : 'var(--white)'}}>{apt.status}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
 
                         {user?.user_type === 'patient' && (
@@ -1832,6 +1886,174 @@
                                 <button className="btn btn-primary" onClick={() => setPage('nurse-application')}>Complete Application</button>
                             </div>
                         )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ NURSE CALENDAR PAGE ============
+        function NurseCalendarPage({ user, setPage }) {
+            const [nurseData, setNurseData] = useState(null);
+            const [availability, setAvailability] = useState({
+                monday: { available: true, start: '09:00', end: '17:00' },
+                tuesday: { available: true, start: '09:00', end: '17:00' },
+                wednesday: { available: true, start: '09:00', end: '17:00' },
+                thursday: { available: true, start: '09:00', end: '17:00' },
+                friday: { available: true, start: '09:00', end: '17:00' },
+                saturday: { available: false, start: '09:00', end: '17:00' },
+                sunday: { available: false, start: '09:00', end: '17:00' }
+            });
+            const [appointments, setAppointments] = useState([]);
+            const [saving, setSaving] = useState(false);
+            const [message, setMessage] = useState('');
+
+            useEffect(() => {
+                if (user) {
+                    supabase.from('nurses').select('*').eq('user_id', user.id).single()
+                        .then(({ data }) => {
+                            setNurseData(data);
+                            if (data?.availability) {
+                                setAvailability(data.availability);
+                            }
+                            if (data) {
+                                supabase.from('appointments')
+                                    .select('*, patient:patients(*, user:users(first_name, last_name))')
+                                    .eq('nurse_id', data.id)
+                                    .order('appointment_date', { ascending: true })
+                                    .then(({ data: aptData }) => setAppointments(aptData || []));
+                            }
+                        });
+                }
+            }, [user]);
+
+            async function saveAvailability() {
+                setSaving(true);
+                try {
+                    await supabase.from('nurses').update({ availability }).eq('id', nurseData.id);
+                    setMessage('Availability saved!');
+                    setTimeout(() => setMessage(''), 3000);
+                } catch (err) {
+                    setMessage('Error saving');
+                } finally {
+                    setSaving(false);
+                }
+            }
+
+            async function updateAppointmentStatus(aptId, newStatus) {
+                await supabase.from('appointments').update({ status: newStatus }).eq('id', aptId);
+                setAppointments(appointments.map(a => a.id === aptId ? {...a, status: newStatus} : a));
+            }
+
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <button className="btn btn-secondary" onClick={() => setPage('dashboard')} style={{marginBottom: '2rem'}}>
+                            ← Back to Dashboard
+                        </button>
+
+                        <h1 style={{marginBottom: '2rem'}}>Manage Your Calendar</h1>
+
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem'}}>
+                            <div>
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1.5rem'}}>📅 Weekly Availability</h3>
+                                    <p style={{color: 'var(--text-light)', marginBottom: '1.5rem'}}>Set your regular working hours</p>
+                                    
+                                    {days.map((day, idx) => (
+                                        <div key={day} style={{display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', padding: '0.75rem', background: 'var(--bg-alt)', borderRadius: '8px'}}>
+                                            <input 
+                                                type="checkbox" 
+                                                checked={availability[day].available} 
+                                                onChange={(e) => setAvailability({...availability, [day]: {...availability[day], available: e.target.checked}})}
+                                                style={{width: '20px', height: '20px'}}
+                                            />
+                                            <span style={{width: '100px', fontWeight: '500'}}>{dayLabels[idx]}</span>
+                                            {availability[day].available && (
+                                                <>
+                                                    <select 
+                                                        value={availability[day].start} 
+                                                        onChange={(e) => setAvailability({...availability, [day]: {...availability[day], start: e.target.value}})}
+                                                        style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)'}}
+                                                    >
+                                                        {['06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00'].map(t => (
+                                                            <option key={t} value={t}>{t}</option>
+                                                        ))}
+                                                    </select>
+                                                    <span>to</span>
+                                                    <select 
+                                                        value={availability[day].end} 
+                                                        onChange={(e) => setAvailability({...availability, [day]: {...availability[day], end: e.target.value}})}
+                                                        style={{padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)'}}
+                                                    >
+                                                        {['12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'].map(t => (
+                                                            <option key={t} value={t}>{t}</option>
+                                                        ))}
+                                                    </select>
+                                                </>
+                                            )}
+                                            {!availability[day].available && (
+                                                <span style={{color: 'var(--text-light)'}}>Not available</span>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {message && <div className="alert alert-success" style={{marginTop: '1rem'}}>{message}</div>}
+
+                                    <button className="btn btn-primary" onClick={saveAvailability} disabled={saving} style={{marginTop: '1rem'}}>
+                                        {saving ? 'Saving...' : 'Save Availability'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1rem'}}>📋 Appointment Requests</h3>
+                                    
+                                    {appointments.length === 0 ? (
+                                        <p style={{color: 'var(--text-light)'}}>No appointments yet. When patients book you, they'll appear here.</p>
+                                    ) : (
+                                        <div>
+                                            {appointments.map(apt => (
+                                                <div key={apt.id} style={{padding: '1rem', background: 'var(--bg-alt)', borderRadius: '8px', marginBottom: '1rem'}}>
+                                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem'}}>
+                                                        <div>
+                                                            <strong>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</strong>
+                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.service_type}</p>
+                                                        </div>
+                                                        <span className="tag" style={{
+                                                            background: apt.status === 'confirmed' ? 'var(--success)' : apt.status === 'cancelled' ? 'var(--error)' : 'var(--warning)',
+                                                            color: 'var(--white)'
+                                                        }}>{apt.status}</span>
+                                                    </div>
+                                                    <p style={{fontSize: '0.95rem', marginBottom: '0.5rem'}}>
+                                                        📅 {apt.appointment_date} at {apt.appointment_time}
+                                                    </p>
+                                                    <p style={{fontSize: '0.95rem', marginBottom: '0.5rem'}}>
+                                                        ⏱️ {apt.duration_hours} hours • 💰 ${apt.total_amount}
+                                                    </p>
+                                                    {apt.address && <p style={{fontSize: '0.9rem', color: 'var(--text-light)'}}>📍 {apt.address}</p>}
+                                                    {apt.notes && <p style={{fontSize: '0.9rem', color: 'var(--text-light)', marginTop: '0.5rem'}}>Note: {apt.notes}</p>}
+                                                    
+                                                    {apt.status === 'pending' && (
+                                                        <div style={{display: 'flex', gap: '0.5rem', marginTop: '1rem'}}>
+                                                            <button className="btn btn-primary" onClick={() => updateAppointmentStatus(apt.id, 'confirmed')} style={{padding: '0.5rem 1rem'}}>
+                                                                ✓ Confirm
+                                                            </button>
+                                                            <button className="btn btn-secondary" onClick={() => updateAppointmentStatus(apt.id, 'cancelled')} style={{padding: '0.5rem 1rem'}}>
+                                                                ✗ Decline
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
@@ -2043,17 +2265,45 @@
                 <div className="page">
                     <div className="container">
                         <div style={{textAlign: 'center', marginBottom: '3rem'}}>
-                            <h1 style={{fontSize: '3rem', marginBottom: '1rem'}}>About Pamily Private Care</h1>
+                            <h1 style={{fontSize: '3rem', marginBottom: '1rem'}}>Our Story</h1>
                             <p style={{fontSize: '1.2rem', color: 'var(--text-light)', maxWidth: '700px', margin: '0 auto'}}>
-                                Connecting families with trusted, qualified nurses for personalized home care.
+                                We started Pamily because we believe healthcare should feel like family.
                             </p>
                         </div>
 
                         <div className="card" style={{marginBottom: '2rem'}}>
-                            <h2 style={{marginBottom: '1rem'}}>Our Mission</h2>
-                            <p style={{lineHeight: 1.8, fontSize: '1.1rem'}}>
-                                At Pamily Private Care, we believe every family deserves access to quality healthcare in the comfort of their own home. We connect patients with verified, experienced nurses who provide compassionate, personalized care tailored to each family's unique needs.
+                            <h2 style={{marginBottom: '1rem'}}>Why We Built Pamily</h2>
+                            <p style={{lineHeight: 1.9, fontSize: '1.05rem', marginBottom: '1rem'}}>
+                                When a loved one needs care at home—whether it's a new mom recovering from childbirth, an elderly parent needing daily assistance, or a family member healing from surgery—finding the right nurse shouldn't be stressful.
                             </p>
+                            <p style={{lineHeight: 1.9, fontSize: '1.05rem', marginBottom: '1rem'}}>
+                                We've been there. We know how hard it is to find someone you can trust to care for the people who matter most. That's why we created Pamily Private Care—a place where families can find verified, compassionate nurses who treat your loved ones like their own family.
+                            </p>
+                            <p style={{lineHeight: 1.9, fontSize: '1.05rem'}}>
+                                Every nurse on our platform is licensed, background-checked, and carefully vetted. But beyond credentials, we look for something more: nurses who genuinely care.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '2rem', background: 'var(--bg-alt)'}}>
+                            <h2 style={{marginBottom: '1rem'}}>Our Promise</h2>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem'}}>
+                                <div>
+                                    <h4 style={{marginBottom: '0.5rem'}}>💙 Care You Can Trust</h4>
+                                    <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Every nurse is verified, licensed, and background-checked. Your safety is our priority.</p>
+                                </div>
+                                <div>
+                                    <h4 style={{marginBottom: '0.5rem'}}>🤝 Real Human Support</h4>
+                                    <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>We're here to help you find the right match, not just fill a slot.</p>
+                                </div>
+                                <div>
+                                    <h4 style={{marginBottom: '0.5rem'}}>💰 Fair & Transparent</h4>
+                                    <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>No hidden fees. Nurses set their rates, you see the cost upfront.</p>
+                                </div>
+                                <div>
+                                    <h4 style={{marginBottom: '0.5rem'}}>🏠 Care Where You're Comfortable</h4>
+                                    <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Quality healthcare in the place you feel safest—your home.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="card" style={{marginBottom: '2rem'}}>
@@ -2062,64 +2312,32 @@
                                 <div style={{textAlign: 'center'}}>
                                     <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🔍</div>
                                     <h3 style={{marginBottom: '0.5rem'}}>1. Search</h3>
-                                    <p style={{color: 'var(--text-light)'}}>Find nurses by location or insurance. Filter by specialty and read reviews.</p>
+                                    <p style={{color: 'var(--text-light)'}}>Find nurses by location or insurance. See their experience, specialties, and reviews.</p>
                                 </div>
                                 <div style={{textAlign: 'center'}}>
-                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📋</div>
-                                    <h3 style={{marginBottom: '0.5rem'}}>2. Choose</h3>
-                                    <p style={{color: 'var(--text-light)'}}>Review nurse profiles, credentials, and ratings to find your perfect match.</p>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>💬</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>2. Connect</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Review profiles and find a nurse who feels like the right fit for your family.</p>
                                 </div>
                                 <div style={{textAlign: 'center'}}>
                                     <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📅</div>
                                     <h3 style={{marginBottom: '0.5rem'}}>3. Book</h3>
-                                    <p style={{color: 'var(--text-light)'}}>Schedule appointments that fit your needs. Communicate directly with your nurse.</p>
+                                    <p style={{color: 'var(--text-light)'}}>Schedule care when you need it. Flexible hours that work for your life.</p>
                                 </div>
                                 <div style={{textAlign: 'center'}}>
-                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>💚</div>
-                                    <h3 style={{marginBottom: '0.5rem'}}>4. Care</h3>
-                                    <p style={{color: 'var(--text-light)'}}>Receive quality care at home. Leave reviews to help other families.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="card" style={{marginBottom: '2rem'}}>
-                            <h2 style={{marginBottom: '1.5rem'}}>Why Choose Us</h2>
-                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem'}}>
-                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
-                                    <div style={{fontSize: '1.5rem'}}>✓</div>
-                                    <div>
-                                        <h4 style={{marginBottom: '0.25rem'}}>Verified Nurses</h4>
-                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>All nurses are licensed, background-checked, and credential-verified.</p>
-                                    </div>
-                                </div>
-                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
-                                    <div style={{fontSize: '1.5rem'}}>🛡️</div>
-                                    <div>
-                                        <h4 style={{marginBottom: '0.25rem'}}>HIPAA Compliant</h4>
-                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Your health information is always protected and secure.</p>
-                                    </div>
-                                </div>
-                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
-                                    <div style={{fontSize: '1.5rem'}}>💳</div>
-                                    <div>
-                                        <h4 style={{marginBottom: '0.25rem'}}>Insurance Accepted</h4>
-                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Many nurses accept major insurance providers.</p>
-                                    </div>
-                                </div>
-                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
-                                    <div style={{fontSize: '1.5rem'}}>⭐</div>
-                                    <div>
-                                        <h4 style={{marginBottom: '0.25rem'}}>Trusted Reviews</h4>
-                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Real reviews from verified patients help you choose.</p>
-                                    </div>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>❤️</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>4. Relax</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Rest easy knowing your loved one is in caring, capable hands.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="card" style={{textAlign: 'center', background: 'var(--primary)', color: 'var(--white)'}}>
-                            <h2 style={{color: 'var(--white)', marginBottom: '1rem'}}>Ready to Get Started?</h2>
-                            <p style={{marginBottom: '1.5rem', opacity: 0.9}}>Find the perfect nurse for your family today.</p>
-                            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                            <h2 style={{color: 'var(--white)', marginBottom: '1rem'}}>We're Here For You</h2>
+                            <p style={{marginBottom: '1.5rem', opacity: 0.9, maxWidth: '500px', margin: '0 auto 1.5rem'}}>
+                                Have questions? Need help finding the right care? We'd love to hear from you.
+                            </p>
+                            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap'}}>
                                 <button className="btn" style={{background: 'var(--white)', color: 'var(--primary)'}} onClick={() => setPage('search-choice')}>
                                     Find a Nurse
                                 </button>
@@ -2127,6 +2345,190 @@
                                     Contact Us
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ PRIVACY POLICY PAGE ============
+        function PrivacyPage({ setPage }) {
+            return (
+                <div className="page">
+                    <div className="container" style={{maxWidth: '800px'}}>
+                        <h1 style={{marginBottom: '0.5rem'}}>Privacy Policy</h1>
+                        <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Last updated: December 2024</p>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>1. Information We Collect</h3>
+                            <p style={{lineHeight: 1.8, marginBottom: '1rem'}}>
+                                We collect information you provide directly to us, including:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)'}}>
+                                <li>Name, email address, and phone number</li>
+                                <li>Account credentials</li>
+                                <li>Insurance information (if provided)</li>
+                                <li>Appointment and booking details</li>
+                                <li>Messages sent through our platform</li>
+                                <li>For nurses: license information, credentials, and professional experience</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>2. How We Use Your Information</h3>
+                            <p style={{lineHeight: 1.8, marginBottom: '1rem'}}>
+                                We use the information we collect to:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)'}}>
+                                <li>Provide, maintain, and improve our services</li>
+                                <li>Connect patients with qualified nurses</li>
+                                <li>Process appointments and bookings</li>
+                                <li>Verify nurse credentials and insurance information</li>
+                                <li>Send you updates about your account and appointments</li>
+                                <li>Respond to your comments, questions, and requests</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>3. Information Sharing</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                We do not sell your personal information. We may share your information only in the following circumstances:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)', marginTop: '1rem'}}>
+                                <li>With nurses you book appointments with (contact and appointment details)</li>
+                                <li>With service providers who assist in our operations</li>
+                                <li>If required by law or to protect rights and safety</li>
+                                <li>With your consent</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>4. Data Security</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                We implement appropriate security measures to protect your personal information. Our platform uses encryption and secure servers to safeguard your data. However, no method of transmission over the Internet is 100% secure.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>5. Your Rights</h3>
+                            <p style={{lineHeight: 1.8, marginBottom: '1rem'}}>
+                                You have the right to:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)'}}>
+                                <li>Access your personal information</li>
+                                <li>Correct inaccurate information</li>
+                                <li>Request deletion of your account</li>
+                                <li>Opt out of marketing communications</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>6. Contact Us</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                If you have questions about this Privacy Policy or your personal information, please contact us through our <a href="#" onClick={() => setPage('contact')} style={{color: 'var(--primary)'}}>contact form</a>.
+                            </p>
+                        </div>
+
+                        <div style={{textAlign: 'center', marginTop: '2rem'}}>
+                            <button className="btn btn-secondary" onClick={() => setPage('home')}>← Back to Home</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ TERMS OF SERVICE PAGE ============
+        function TermsPage({ setPage }) {
+            return (
+                <div className="page">
+                    <div className="container" style={{maxWidth: '800px'}}>
+                        <h1 style={{marginBottom: '0.5rem'}}>Terms of Service</h1>
+                        <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Last updated: December 2024</p>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>1. About Our Service</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                Pamily Private Care is a marketplace platform that connects patients and families with independent nursing professionals. We are not a healthcare provider, nursing agency, or employer of the nurses on our platform. We facilitate connections between patients seeking care and nurses offering their services.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>2. User Accounts</h3>
+                            <p style={{lineHeight: 1.8, marginBottom: '1rem'}}>
+                                To use our services, you must:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)'}}>
+                                <li>Be at least 18 years old</li>
+                                <li>Provide accurate and complete information</li>
+                                <li>Maintain the security of your account</li>
+                                <li>Notify us of any unauthorized access</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>3. For Patients</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                When booking a nurse through our platform, you understand that:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)', marginTop: '1rem'}}>
+                                <li>Nurses are independent contractors, not employees of Pamily Private Care</li>
+                                <li>You are responsible for verifying that the nurse meets your specific needs</li>
+                                <li>Payment terms are agreed upon between you and the nurse</li>
+                                <li>You should verify insurance coverage directly with your insurance provider</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>4. For Nurses</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                By joining our platform, nurses agree to:
+                            </p>
+                            <ul style={{lineHeight: 2, paddingLeft: '1.5rem', color: 'var(--text-light)', marginTop: '1rem'}}>
+                                <li>Maintain valid nursing licenses and required certifications</li>
+                                <li>Provide accurate information about qualifications and experience</li>
+                                <li>Carry appropriate professional liability insurance</li>
+                                <li>Deliver services professionally and ethically</li>
+                                <li>Comply with all applicable healthcare laws and regulations</li>
+                            </ul>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>5. Limitation of Liability</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                Pamily Private Care is a marketplace platform. We do not provide medical advice or healthcare services. We are not responsible for the quality of care provided by nurses on our platform, disputes between users, or any damages arising from the use of our services. Users engage with each other at their own risk.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>6. Platform Fee</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                Pamily Private Care charges a platform fee of 20% on bookings made through our service. Nurses receive 80% of their stated rate. This fee covers platform maintenance, verification services, and customer support.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>7. Cancellation Policy</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                Cancellation policies may vary by nurse. Please review the specific terms with your nurse before booking. We encourage at least 24 hours notice for cancellations when possible.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>8. Changes to Terms</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                We may update these terms from time to time. Continued use of our platform after changes constitutes acceptance of the new terms.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '1.5rem'}}>
+                            <h3 style={{marginBottom: '1rem'}}>9. Contact</h3>
+                            <p style={{lineHeight: 1.8}}>
+                                Questions about these Terms? <a href="#" onClick={() => setPage('contact')} style={{color: 'var(--primary)'}}>Contact us</a>.
+                            </p>
+                        </div>
+
+                        <div style={{textAlign: 'center', marginTop: '2rem'}}>
+                            <button className="btn btn-secondary" onClick={() => setPage('home')}>← Back to Home</button>
                         </div>
                     </div>
                 </div>
@@ -2312,8 +2714,11 @@
                     {page === 'login' && <LoginPage setPage={setPage} setUser={setUser} />}
                     {page === 'nurse-application' && user && <NurseApplicationPage user={user} setPage={setPage} />}
                     {page === 'dashboard' && user && <DashboardPage user={user} setPage={setPage} setSelectedNurse={setSelectedNurse} />}
+                    {page === 'nurse-calendar' && user && <NurseCalendarPage user={user} setPage={setPage} />}
                     {page === 'about' && <AboutPage setPage={setPage} />}
                     {page === 'contact' && <ContactPage setPage={setPage} />}
+                    {page === 'privacy' && <PrivacyPage setPage={setPage} />}
+                    {page === 'terms' && <TermsPage setPage={setPage} />}
                     
                     <Footer setPage={setPage} />
                 </>
