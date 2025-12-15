@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pamily Private Care - Trusted Care for Your Family</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #4A7C7E;
+            --primary-light: #6B9C9E;
+            --primary-dark: #2F5456;
+            --secondary: #E6A87C;
+            --accent: #F4E4D7;
+            --success: #6DB193;
+            --warning: #E8B957;
+            --error: #D94A4A;
+            --text: #2C3E50;
+            --text-light: #5A6E7D;
+            --bg: #FDFCFB;
+            --bg-alt: #F7F4F0;
+            --white: #FFFFFF;
+            --border: #E8E3DC;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(253, 252, 251, 0.98);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-family: 'Playfair Display', serif;
+            font-weight: 800;
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover { color: var(--primary); }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+        
+        .btn-accent {
+            background: var(--secondary);
+            color: var(--white);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page { padding-top: 5rem; min-height: 100vh; }
+        
+        .hero {
+            padding: 4rem 2rem 5rem;
+            background: linear-gradient(135deg, var(--bg-alt), var(--bg));
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero h1 span { color: var(--primary); }
+        
+        .card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(74, 124, 126, 0.1);
+        }
+        
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-success { background: var(--success); color: var(--white); }
+        .alert-error { background: var(--error); color: var(--white); }
+        .alert-warning { background: var(--warning); color: var(--white); }
+        
+        .nurse-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        
+        .nurse-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 124, 126, 0.12);
+        }
+        
+        .nurse-avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .tag {
+            background: var(--bg-alt);
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-alt);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--border);
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+        
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-alt);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        .step.active .step-num {
+            background: var(--primary);
+            color: var(--white);
+        }
+        
+        .step.done .step-num {
+            background: var(--success);
+            color: var(--white);
+        }
+        
+        .step-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        .step.active .step-label {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-choice {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .choice-card {
+            background: var(--white);
+            padding: 3rem 2rem;
+            border-radius: 20px;
+            text-align: center;
+            border: 3px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .choice-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(74, 124, 126, 0.15);
+        }
+        
+        .choice-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer {
+            background: var(--primary-dark);
+            color: var(--white);
+            padding: 4rem 2rem 2rem;
+            margin-top: 4rem;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
+        
+        .footer h4 {
+            margin-bottom: 1rem;
+            color: var(--white);
+        }
+        
+        .footer a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .footer a:hover { color: var(--white); }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .nav-links { display: none; }
+            .search-choice { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Supabase Setup
+        const SUPABASE_URL = 'https://lubmuqfvgqdrwawkwhei.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1Ym11cWZ2Z3Fkcndhd2t3aGVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NTMzMDksImV4cCI6MjA4MTMyOTMwOX0.sAkzavJSlXcLRs3gkWAvyzpEYffYwGloRQ0PzjuKXXE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ============ HEADER ============
+        function Header({ setPage, user, onLogout }) {
+            return (
+                <header className="header">
+                    <nav className="nav">
+                        <div className="logo" onClick={() => setPage('home')}>
+                            <img className="logo-icon" src="data:image/png;base64,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" alt="Pamily Private Care" />
+                            Pamily Private Care
+                        </div>
+                        <div className="nav-links">
+                            <span className="nav-link" onClick={() => setPage('home')}>Home</span>
+                            <span className="nav-link" onClick={() => setPage('search-choice')}>Find Care</span>
+                            <span className="nav-link" onClick={() => setPage('for-nurses')}>For Nurses</span>
+                            <span className="nav-link" onClick={() => setPage('reviews')}>Reviews</span>
+                            {user ? (
+                                <>
+                                    <span className="nav-link" onClick={() => setPage('dashboard')}>Dashboard</span>
+                                    <button className="btn btn-secondary" onClick={onLogout}>Logout</button>
+                                </>
+                            ) : (
+                                <button className="btn btn-primary" onClick={() => setPage('login')}>Sign In</button>
+                            )}
+                        </div>
+                    </nav>
+                </header>
+            );
+        }
+
+        // ============ FOOTER ============
+        function Footer({ setPage }) {
+            return (
+                <footer className="footer">
+                    <div className="footer-grid">
+                        <div>
+                            <h4>Pamily Private Care</h4>
+                            <p style={{opacity: 0.8, lineHeight: 1.7}}>
+                                Connecting families with trusted, qualified nurses for personalized home care.
+                            </p>
+                        </div>
+                        <div>
+                            <h4>For Patients</h4>
+                            <a href="#" onClick={() => setPage('search-choice')}>Find a Nurse</a>
+                            <a href="#" onClick={() => setPage('reviews')}>Read Reviews</a>
+                            <a href="#" onClick={() => setPage('about')}>How It Works</a>
+                        </div>
+                        <div>
+                            <h4>For Nurses</h4>
+                            <a href="#" onClick={() => setPage('for-nurses')}>Join Our Network</a>
+                            <a href="#" onClick={() => setPage('login')}>Nurse Login</a>
+                        </div>
+                        <div>
+                            <h4>Company</h4>
+                            <a href="#" onClick={() => setPage('about')}>About Us</a>
+                            <a href="#" onClick={() => setPage('contact')}>Contact</a>
+                            <a href="#">Privacy Policy</a>
+                        </div>
+                    </div>
+                    <div className="footer-bottom">
+                        © 2024 Pamily Private Care. All rights reserved.
+                    </div>
+                </footer>
+            );
+        }
+
+        // ============ HOME PAGE ============
+        function HomePage({ setPage }) {
+            return (
+                <div className="page">
+                    <section className="hero">
+                        <div className="container">
+                            <h1>Trusted <span>Care</span> for Your Family</h1>
+                            <p style={{fontSize: '1.25rem', color: 'var(--text-light)', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem'}}>
+                                Connect with qualified, experienced nurses for postpartum care, elderly assistance, and specialized medical support.
+                            </p>
+                            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                                <button className="btn btn-primary" onClick={() => setPage('search-choice')}>
+                                    Find a Nurse
+                                </button>
+                                <button className="btn btn-secondary" onClick={() => setPage('login')}>
+                                    Sign Up Free
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <div className="container">
+                        <div className="feature-grid">
+                            <div className="feature-card">
+                                <div className="feature-icon">✓</div>
+                                <h3>Verified Professionals</h3>
+                                <p style={{color: 'var(--text-light)'}}>All nurses are licensed, background-checked, and verified.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">🛡️</div>
+                                <h3>HIPAA Compliant</h3>
+                                <p style={{color: 'var(--text-light)'}}>Your health information is always protected and secure.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">💳</div>
+                                <h3>Insurance Accepted</h3>
+                                <p style={{color: 'var(--text-light)'}}>Many nurses accept major insurance providers.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">⭐</div>
+                                <h3>Trusted Reviews</h3>
+                                <p style={{color: 'var(--text-light)'}}>Read real reviews from families like yours.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">📅</div>
+                                <h3>Flexible Scheduling</h3>
+                                <p style={{color: 'var(--text-light)'}}>Book care that fits your schedule, day or night.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">💬</div>
+                                <h3>Direct Communication</h3>
+                                <p style={{color: 'var(--text-light)'}}>Message your nurse directly through our platform.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ SEARCH CHOICE PAGE ============
+        function SearchChoicePage({ setPage, setSearchMode, setSearchFilters }) {
+            const [mode, setMode] = useState(null);
+            const [zipCode, setZipCode] = useState('');
+            const [specialty, setSpecialty] = useState('');
+            const [insurance, setInsurance] = useState('');
+            const [insuranceList, setInsuranceList] = useState([]);
+
+            useEffect(() => {
+                supabase.from('insurance_providers').select('*').then(({ data }) => setInsuranceList(data || []));
+            }, []);
+
+            function handleLocationSearch(e) {
+                e.preventDefault();
+                setSearchMode('location');
+                setSearchFilters({ zipCode, specialty });
+                setPage('browse');
+            }
+
+            function handleInsuranceSearch(e) {
+                e.preventDefault();
+                setSearchMode('insurance');
+                setSearchFilters({ insurance, specialty });
+                setPage('browse');
+            }
+
+            return (
+                <div className="page">
+                    <div className="container" style={{paddingTop: '3rem'}}>
+                        <div style={{textAlign: 'center', marginBottom: '3rem'}}>
+                            <h1 style={{fontSize: '3rem', marginBottom: '1rem'}}>Find Your Perfect Nurse</h1>
+                            <p style={{fontSize: '1.2rem', color: 'var(--text-light)'}}>
+                                Choose how you'd like to search
+                            </p>
+                        </div>
+                        
+                        {!mode && (
+                            <div className="search-choice">
+                                <div className="choice-card" onClick={() => setMode('location')}>
+                                    <div className="choice-icon">📍</div>
+                                    <h3 style={{fontSize: '1.5rem', marginBottom: '1rem'}}>Find by Location</h3>
+                                    <p style={{color: 'var(--text-light)', marginBottom: '1.5rem'}}>
+                                        Enter your ZIP code to find nurses in your area.
+                                    </p>
+                                    <button className="btn btn-primary">Search by Location</button>
+                                </div>
+                                
+                                <div className="choice-card" onClick={() => setMode('insurance')}>
+                                    <div className="choice-icon">💳</div>
+                                    <h3 style={{fontSize: '1.5rem', marginBottom: '1rem'}}>Find by Insurance</h3>
+                                    <p style={{color: 'var(--text-light)', marginBottom: '1.5rem'}}>
+                                        Select your insurance to find nurses who accept it.
+                                    </p>
+                                    <button className="btn btn-accent">Search by Insurance</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {mode === 'location' && (
+                            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                                <button className="btn btn-secondary" onClick={() => setMode(null)} style={{marginBottom: '1.5rem'}}>
+                                    ← Back
+                                </button>
+                                <h2 style={{marginBottom: '0.5rem'}}>📍 Search by Location</h2>
+                                <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Find nurses near you</p>
+                                <form onSubmit={handleLocationSearch}>
+                                    <div className="form-group">
+                                        <label>Your ZIP Code *</label>
+                                        <input type="text" value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="e.g., 10001" required />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Type of Care (Optional)</label>
+                                        <select value={specialty} onChange={(e) => setSpecialty(e.target.value)}>
+                                            <option value="">All Specialties</option>
+                                            <option value="Postpartum Care">Postpartum Care</option>
+                                            <option value="Newborn Care">Newborn Care</option>
+                                            <option value="Elderly Care">Elderly Care</option>
+                                            <option value="Post-Surgery Care">Post-Surgery Care</option>
+                                            <option value="Wound Care">Wound Care</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="btn btn-primary" style={{width: '100%'}}>Find Nurses Near Me</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {mode === 'insurance' && (
+                            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                                <button className="btn btn-secondary" onClick={() => setMode(null)} style={{marginBottom: '1.5rem'}}>
+                                    ← Back
+                                </button>
+                                <h2 style={{marginBottom: '0.5rem'}}>💳 Search by Insurance</h2>
+                                <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Find nurses who accept your insurance</p>
+                                <form onSubmit={handleInsuranceSearch}>
+                                    <div className="form-group">
+                                        <label>Your Insurance Provider *</label>
+                                        <select value={insurance} onChange={(e) => setInsurance(e.target.value)} required>
+                                            <option value="">Select your insurance...</option>
+                                            {insuranceList.map(ins => (
+                                                <option key={ins.id} value={ins.name}>{ins.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Type of Care (Optional)</label>
+                                        <select value={specialty} onChange={(e) => setSpecialty(e.target.value)}>
+                                            <option value="">All Specialties</option>
+                                            <option value="Postpartum Care">Postpartum Care</option>
+                                            <option value="Newborn Care">Newborn Care</option>
+                                            <option value="Elderly Care">Elderly Care</option>
+                                            <option value="Post-Surgery Care">Post-Surgery Care</option>
+                                            <option value="Wound Care">Wound Care</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="btn btn-primary" style={{width: '100%'}}>Find In-Network Nurses</button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ BROWSE NURSES PAGE ============
+        function BrowseNursesPage({ setPage, setSelectedNurse, searchMode, searchFilters }) {
+            const [nurses, setNurses] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                loadNurses();
+            }, []);
+
+            async function loadNurses() {
+                try {
+                    const { data, error } = await supabase
+                        .from('nurses')
+                        .select('*, user:users(first_name, last_name, email), nurse_insurance(provider_name)')
+                        .eq('profile_approved', true);
+
+                    if (error) throw error;
+                    
+                    let filtered = data || [];
+
+                    if (searchMode === 'location' && searchFilters?.zipCode) {
+                        filtered = filtered.filter(n => n.zip_code === searchFilters.zipCode || n.zip_code?.startsWith(searchFilters.zipCode.substring(0, 3)));
+                    }
+
+                    if (searchMode === 'insurance' && searchFilters?.insurance) {
+                        filtered = filtered.filter(n => n.nurse_insurance?.some(ins => ins.provider_name === searchFilters.insurance));
+                    }
+
+                    if (searchFilters?.specialty) {
+                        filtered = filtered.filter(n => n.specialties?.includes(searchFilters.specialty));
+                    }
+
+                    setNurses(filtered);
+                } catch (err) {
+                    console.error('Error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            if (loading) {
+                return (
+                    <div className="page">
+                        <div className="container">
+                            <div className="spinner"></div>
+                            <p style={{textAlign: 'center', color: 'var(--text-light)'}}>Searching...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <button className="btn btn-secondary" onClick={() => setPage('search-choice')} style={{marginBottom: '1.5rem'}}>
+                            ← New Search
+                        </button>
+                        <h1 style={{marginBottom: '0.5rem'}}>
+                            {searchMode === 'insurance' ? 'In-Network Nurses' : 'Nurses Near You'}
+                        </h1>
+                        <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>
+                            {nurses.length} found {searchFilters?.zipCode && `near ${searchFilters.zipCode}`}{searchFilters?.insurance && `accepting ${searchFilters.insurance}`}
+                        </p>
+
+                        {nurses.length === 0 ? (
+                            <div className="card" style={{textAlign: 'center', padding: '4rem 2rem'}}>
+                                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🔍</div>
+                                <h2>No Nurses Found</h2>
+                                <p style={{color: 'var(--text-light)', margin: '1rem 0 2rem'}}>
+                                    We're still onboarding nurses. Try a different search or check back soon!
+                                </p>
+                                <button className="btn btn-primary" onClick={() => setPage('search-choice')}>Try Different Search</button>
+                            </div>
+                        ) : (
+                            nurses.map(nurse => (
+                                <div className="nurse-card" key={nurse.id} onClick={() => { setSelectedNurse(nurse); setPage('nurse-profile'); }}>
+                                    <div style={{display: 'flex', gap: '1.5rem'}}>
+                                        <div className="nurse-avatar">{nurse.avatar_emoji || '👩‍⚕️'}</div>
+                                        <div style={{flex: 1}}>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                                                <div>
+                                                    <h3 style={{marginBottom: '0.25rem'}}>{nurse.user?.first_name} {nurse.user?.last_name}</h3>
+                                                    <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>{nurse.credentials?.join(', ')} • {nurse.years_experience} years</p>
+                                                </div>
+                                                <div style={{textAlign: 'right'}}>
+                                                    <div style={{fontSize: '1.25rem', fontWeight: '700', color: 'var(--primary)'}}>${nurse.hourly_rate}/hr</div>
+                                                    <div style={{fontSize: '0.9rem', color: 'var(--text-light)'}}>⭐ {nurse.average_rating || 'New'}</div>
+                                                </div>
+                                            </div>
+                                            <div style={{marginTop: '0.75rem'}}>
+                                                {nurse.specialties?.slice(0, 3).map(spec => (<span className="tag" key={spec}>{spec}</span>))}
+                                            </div>
+                                            <p style={{marginTop: '0.75rem', fontSize: '0.9rem', color: 'var(--text-light)'}}>
+                                                📍 {nurse.city}, {nurse.state}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ NURSE PROFILE PAGE ============
+        function NurseProfilePage({ nurse, setPage, user }) {
+            if (!nurse) return null;
+            
+            return (
+                <div className="page">
+                    <div className="container">
+                        <button 
+                            className="btn btn-secondary" 
+                            onClick={() => setPage('browse')}
+                            style={{marginBottom: '2rem'}}
+                        >
+                            ← Back to Search
+                        </button>
+                        
+                        <div className="card">
+                            <div style={{display: 'flex', gap: '2rem', alignItems: 'start'}}>
+                                <div style={{fontSize: '5rem'}}>{nurse.avatar_emoji || '👩‍⚕️'}</div>
+                                <div style={{flex: 1}}>
+                                    <h1 style={{marginBottom: '0.5rem'}}>
+                                        {nurse.user?.first_name} {nurse.user?.last_name}
+                                    </h1>
+                                    <p style={{color: 'var(--text-light)', fontSize: '1.1rem', marginBottom: '1rem'}}>
+                                        {nurse.credentials?.join(', ')} • {nurse.years_experience} years experience
+                                    </p>
+                                    <div style={{display: 'flex', gap: '2rem', marginBottom: '1rem'}}>
+                                        <div>
+                                            <strong style={{fontSize: '1.5rem', color: 'var(--primary)'}}>${nurse.hourly_rate}</strong>
+                                            <span style={{color: 'var(--text-light)'}}>/hour</span>
+                                        </div>
+                                        <div>
+                                            <strong style={{fontSize: '1.5rem'}}>⭐ {nurse.average_rating || 'New'}</strong>
+                                            <span style={{color: 'var(--text-light)'}}> ({nurse.total_reviews || 0} reviews)</span>
+                                        </div>
+                                    </div>
+                                    <button className="btn btn-primary" onClick={() => user ? setPage('booking') : setPage('login')}>
+                                        {user ? 'Book Consultation' : 'Sign In to Book'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem'}}>
+                            <div>
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1rem'}}>About</h3>
+                                    <p style={{lineHeight: 1.8}}>{nurse.bio || 'No bio provided yet.'}</p>
+                                </div>
+                                
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1rem'}}>Specialties</h3>
+                                    <div>
+                                        {nurse.specialties?.map(spec => (
+                                            <span className="tag" key={spec}>{spec}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1rem'}}>Details</h3>
+                                    <p><strong>Location:</strong> {nurse.city}, {nurse.state}</p>
+                                    <p><strong>Languages:</strong> {nurse.languages?.join(', ')}</p>
+                                    <p><strong>License:</strong> {nurse.license_state} #{nurse.license_number}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ FOR NURSES PAGE ============
+        function ForNursesPage({ setPage }) {
+            return (
+                <div className="page">
+                    <section style={{
+                        background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+                        color: 'var(--white)',
+                        padding: '5rem 2rem',
+                        textAlign: 'center'
+                    }}>
+                        <div className="container">
+                            <h1 style={{fontSize: '3rem', marginBottom: '1.5rem', color: 'var(--white)'}}>
+                                Join Our Nursing Network
+                            </h1>
+                            <p style={{fontSize: '1.25rem', opacity: 0.9, marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem'}}>
+                                Set your own schedule, choose your clients, and earn what you deserve.
+                            </p>
+                            <button className="btn btn-accent" onClick={() => setPage('login')} style={{fontSize: '1.1rem', padding: '1rem 2.5rem'}}>
+                                Apply Now
+                            </button>
+                        </div>
+                    </section>
+                    
+                    <div className="container">
+                        <h2 style={{textAlign: 'center', fontSize: '2.5rem', margin: '3rem 0'}}>Why Nurses Love Pamily</h2>
+                        
+                        <div className="feature-grid">
+                            <div className="feature-card">
+                                <div className="feature-icon">💰</div>
+                                <h3>Earn More</h3>
+                                <p style={{color: 'var(--text-light)'}}>Set your own rates and keep 80% of every booking. You're in control.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">📅</div>
+                                <h3>Flexible Schedule</h3>
+                                <p style={{color: 'var(--text-light)'}}>Work when you want. Accept only the clients that fit your availability.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">🏠</div>
+                                <h3>Choose Your Clients</h3>
+                                <p style={{color: 'var(--text-light)'}}>Select patients in your area whose needs match your expertise.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">🛡️</div>
+                                <h3>Liability Coverage</h3>
+                                <p style={{color: 'var(--text-light)'}}>We provide malpractice coverage for all bookings through our platform.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">💳</div>
+                                <h3>Insurance Billing</h3>
+                                <p style={{color: 'var(--text-light)'}}>We handle insurance verification and billing so you can focus on care.</p>
+                            </div>
+                            <div className="feature-card">
+                                <div className="feature-icon">📱</div>
+                                <h3>Easy Tools</h3>
+                                <p style={{color: 'var(--text-light)'}}>Simple scheduling, messaging, and payment tracking all in one place.</p>
+                            </div>
+                        </div>
+                        
+                        <div style={{textAlign: 'center', margin: '4rem 0'}}>
+                            <h2 style={{marginBottom: '1rem'}}>Requirements</h2>
+                            <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>To join our network, you'll need:</p>
+                            <div style={{display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '1rem'}}>
+                                <span className="tag" style={{padding: '0.5rem 1rem'}}>✓ Active RN/LPN License</span>
+                                <span className="tag" style={{padding: '0.5rem 1rem'}}>✓ 2+ Years Experience</span>
+                                <span className="tag" style={{padding: '0.5rem 1rem'}}>✓ Background Check</span>
+                                <span className="tag" style={{padding: '0.5rem 1rem'}}>✓ CPR Certification</span>
+                                <span className="tag" style={{padding: '0.5rem 1rem'}}>✓ Reliable Transportation</span>
+                            </div>
+                        </div>
+                        
+                        <div className="card" style={{textAlign: 'center', background: 'var(--primary)', color: 'var(--white)'}}>
+                            <h2 style={{color: 'var(--white)', marginBottom: '1rem'}}>Ready to Get Started?</h2>
+                            <p style={{marginBottom: '2rem', opacity: 0.9}}>Join hundreds of nurses already earning on their own terms.</p>
+                            <button className="btn" style={{background: 'var(--white)', color: 'var(--primary)'}} onClick={() => setPage('login')}>
+                                Create Your Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ REVIEWS PAGE ============
+        function ReviewsPage({ setPage, user }) {
+            const [reviews, setReviews] = useState([]);
+            const [nurses, setNurses] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showForm, setShowForm] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [message, setMessage] = useState({ type: '', text: '' });
+            
+            const [form, setForm] = useState({
+                nurseId: '',
+                rating: 5,
+                service: '',
+                reviewerName: '',
+                text: ''
+            });
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            async function loadData() {
+                try {
+                    // Load reviews
+                    const { data: reviewData } = await supabase
+                        .from('reviews')
+                        .select('*, nurse:nurses(*, user:users(first_name, last_name))')
+                        .order('created_at', { ascending: false });
+                    setReviews(reviewData || []);
+
+                    // Load nurses for dropdown
+                    const { data: nurseData } = await supabase
+                        .from('nurses')
+                        .select('*, user:users(first_name, last_name)')
+                        .eq('profile_approved', true);
+                    setNurses(nurseData || []);
+                } catch (err) {
+                    console.error('Error:', err);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            async function handleSubmit(e) {
+                e.preventDefault();
+                setSubmitting(true);
+                setMessage({ type: '', text: '' });
+
+                try {
+                    const { error } = await supabase.from('reviews').insert([{
+                        nurse_id: form.nurseId,
+                        rating: form.rating,
+                        service_type: form.service,
+                        reviewer_name: form.reviewerName,
+                        review_text: form.text
+                    }]);
+
+                    if (error) throw error;
+
+                    setMessage({ type: 'success', text: 'Thank you! Your review has been submitted.' });
+                    setForm({ nurseId: '', rating: 5, service: '', reviewerName: '', text: '' });
+                    setShowForm(false);
+                    loadData(); // Reload reviews
+                } catch (err) {
+                    setMessage({ type: 'error', text: err.message });
+                } finally {
+                    setSubmitting(false);
+                }
+            }
+
+            const renderStars = (rating) => {
+                return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+            };
+
+            if (loading) {
+                return (
+                    <div className="page">
+                        <div className="container">
+                            <div className="spinner"></div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem'}}>
+                            <div>
+                                <h1 style={{marginBottom: '0.5rem'}}>Reviews</h1>
+                                <p style={{color: 'var(--text-light)'}}>
+                                    {reviews.length} reviews from families
+                                </p>
+                            </div>
+                            <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+                                {showForm ? 'Cancel' : '+ Leave a Review'}
+                            </button>
+                        </div>
+
+                        {message.text && <div className={`alert alert-${message.type}`}>{message.text}</div>}
+
+                        {showForm && (
+                            <div className="card" style={{marginBottom: '2rem'}}>
+                                <h3 style={{marginBottom: '1.5rem'}}>Leave a Review</h3>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="form-group">
+                                        <label>Your Name *</label>
+                                        <input 
+                                            type="text" 
+                                            value={form.reviewerName} 
+                                            onChange={(e) => setForm({...form, reviewerName: e.target.value})}
+                                            placeholder="Enter your name"
+                                            required 
+                                        />
+                                    </div>
+                                    
+                                    <div className="form-group">
+                                        <label>Select Nurse *</label>
+                                        <select 
+                                            value={form.nurseId} 
+                                            onChange={(e) => setForm({...form, nurseId: e.target.value})}
+                                            required
+                                        >
+                                            <option value="">Choose a nurse...</option>
+                                            {nurses.map(nurse => (
+                                                <option key={nurse.id} value={nurse.id}>
+                                                    {nurse.user?.first_name} {nurse.user?.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Service Type *</label>
+                                        <select 
+                                            value={form.service} 
+                                            onChange={(e) => setForm({...form, service: e.target.value})}
+                                            required
+                                        >
+                                            <option value="">Select service...</option>
+                                            <option value="Postpartum Care">Postpartum Care</option>
+                                            <option value="Newborn Care">Newborn Care</option>
+                                            <option value="Elderly Care">Elderly Care</option>
+                                            <option value="Post-Surgery Care">Post-Surgery Care</option>
+                                            <option value="Wound Care">Wound Care</option>
+                                            <option value="Chronic Care">Chronic Care</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Rating *</label>
+                                        <div style={{display: 'flex', gap: '0.5rem'}}>
+                                            {[1, 2, 3, 4, 5].map(num => (
+                                                <button
+                                                    key={num}
+                                                    type="button"
+                                                    onClick={() => setForm({...form, rating: num})}
+                                                    style={{
+                                                        fontSize: '2rem',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        color: num <= form.rating ? 'var(--warning)' : 'var(--border)'
+                                                    }}
+                                                >
+                                                    ★
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Your Review *</label>
+                                        <textarea 
+                                            value={form.text} 
+                                            onChange={(e) => setForm({...form, text: e.target.value})}
+                                            placeholder="Share your experience..."
+                                            required
+                                        />
+                                    </div>
+
+                                    <button type="submit" className="btn btn-primary" disabled={submitting}>
+                                        {submitting ? 'Submitting...' : 'Submit Review'}
+                                    </button>
+                                </form>
+                            </div>
+                        )}
+
+                        {reviews.length === 0 ? (
+                            <div className="card" style={{textAlign: 'center', padding: '4rem 2rem'}}>
+                                <div style={{fontSize: '4rem', marginBottom: '1rem', opacity: 0.5}}>⭐</div>
+                                <h2>No Reviews Yet</h2>
+                                <p style={{color: 'var(--text-light)', margin: '1rem 0 2rem'}}>
+                                    Be the first to leave a review!
+                                </p>
+                                <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                                    Leave a Review
+                                </button>
+                            </div>
+                        ) : (
+                            reviews.map(review => (
+                                <div className="card" key={review.id} style={{marginBottom: '1rem'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem'}}>
+                                        <div>
+                                            <div style={{fontWeight: '600', marginBottom: '0.25rem'}}>{review.reviewer_name}</div>
+                                            <div style={{color: 'var(--warning)', fontSize: '1.1rem'}}>{renderStars(review.rating)}</div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <span className="tag">{review.service_type}</span>
+                                            <div style={{color: 'var(--text-light)', fontSize: '0.85rem', marginTop: '0.5rem'}}>
+                                                {review.nurse?.user?.first_name} {review.nurse?.user?.last_name}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p style={{lineHeight: 1.7, color: 'var(--text)'}}>{review.review_text}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ LOGIN PAGE ============
+        function LoginPage({ setPage, setUser }) {
+            const [isLogin, setIsLogin] = useState(true);
+            const [userType, setUserType] = useState('patient');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [firstName, setFirstName] = useState('');
+            const [lastName, setLastName] = useState('');
+            const [phone, setPhone] = useState('');
+            const [insuranceProvider, setInsuranceProvider] = useState('');
+            const [memberId, setMemberId] = useState('');
+            const [groupNumber, setGroupNumber] = useState('');
+            const [insuranceList, setInsuranceList] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [message, setMessage] = useState({ type: '', text: '' });
+
+            useEffect(() => {
+                supabase.from('insurance_providers').select('*').then(({ data }) => setInsuranceList(data || []));
+            }, []);
+
+            async function handleSubmit(e) {
+                e.preventDefault();
+                setLoading(true);
+                setMessage({ type: '', text: '' });
+
+                try {
+                    if (isLogin) {
+                        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+                        if (authError) throw authError;
+
+                        const { data: userData, error: userError } = await supabase
+                            .from('users')
+                            .select('*')
+                            .eq('email', email)
+                            .single();
+
+                        if (userError) throw userError;
+                        setUser(userData);
+                        setMessage({ type: 'success', text: 'Login successful!' });
+
+                        if (userData.user_type === 'nurse') {
+                            const { data: nurseData } = await supabase
+                                .from('nurses')
+                                .select('*')
+                                .eq('user_id', userData.id)
+                                .single();
+
+                            setTimeout(() => setPage(nurseData ? 'dashboard' : 'nurse-application'), 1000);
+                        } else {
+                            setTimeout(() => setPage('dashboard'), 1000);
+                        }
+                    } else {
+                        const { error: authError } = await supabase.auth.signUp({ email, password });
+                        if (authError) throw authError;
+
+                        const { data: userData, error: userError } = await supabase
+                            .from('users')
+                            .insert([{ email, first_name: firstName, last_name: lastName, user_type: userType, phone }])
+                            .select()
+                            .single();
+
+                        if (userError) throw userError;
+
+                        if (userType === 'patient') {
+                            await supabase.from('patients').insert([{ 
+                                user_id: userData.id,
+                                insurance_provider: insuranceProvider || null,
+                                insurance_member_id: memberId || null,
+                                insurance_group_number: groupNumber || null,
+                                insurance_verified: false
+                            }]);
+                        }
+
+                        setUser(userData);
+                        setMessage({ type: 'success', text: 'Account created!' });
+                        setTimeout(() => setPage(userType === 'nurse' ? 'nurse-application' : 'dashboard'), 1500);
+                    }
+                } catch (err) {
+                    setMessage({ type: 'error', text: err.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            return (
+                <div className="page" style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <div className="card" style={{maxWidth: '500px', width: '100%'}}>
+                        <h1 style={{textAlign: 'center', marginBottom: '0.5rem'}}>
+                            {isLogin ? 'Welcome Back' : 'Create Account'}
+                        </h1>
+                        <p style={{textAlign: 'center', color: 'var(--text-light)', marginBottom: '2rem'}}>
+                            {isLogin ? 'Sign in to your account' : 'Join Pamily Private Care'}
+                        </p>
+
+                        {!isLogin && (
+                            <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: 'var(--bg-alt)', padding: '0.5rem', borderRadius: '12px'}}>
+                                <button
+                                    type="button"
+                                    onClick={() => setUserType('patient')}
+                                    style={{
+                                        flex: 1, padding: '0.75rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                                        background: userType === 'patient' ? 'var(--white)' : 'transparent',
+                                        fontWeight: userType === 'patient' ? '600' : '400',
+                                        color: userType === 'patient' ? 'var(--primary)' : 'var(--text)'
+                                    }}
+                                >
+                                    I Need Care
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUserType('nurse')}
+                                    style={{
+                                        flex: 1, padding: '0.75rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
+                                        background: userType === 'nurse' ? 'var(--white)' : 'transparent',
+                                        fontWeight: userType === 'nurse' ? '600' : '400',
+                                        color: userType === 'nurse' ? 'var(--primary)' : 'var(--text)'
+                                    }}
+                                >
+                                    I'm a Nurse
+                                </button>
+                            </div>
+                        )}
+
+                        {message.text && <div className={`alert alert-${message.type}`}>{message.text}</div>}
+
+                        <form onSubmit={handleSubmit}>
+                            {!isLogin && (
+                                <>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
+                                        <div className="form-group">
+                                            <label>First Name *</label>
+                                            <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>Last Name *</label>
+                                            <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Phone Number</label>
+                                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 555-5555" />
+                                    </div>
+                                </>
+                            )}
+                            <div className="form-group">
+                                <label>Email *</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Password *</label>
+                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength="6" />
+                            </div>
+
+                            {!isLogin && userType === 'patient' && (
+                                <div style={{background: 'var(--bg-alt)', padding: '1.5rem', borderRadius: '12px', marginTop: '1.5rem'}}>
+                                    <h3 style={{fontSize: '1.1rem', marginBottom: '0.5rem'}}>💳 Insurance Information</h3>
+                                    <p style={{fontSize: '0.9rem', color: 'var(--text-light)', marginBottom: '1rem'}}>Optional - Add now or later in your dashboard</p>
+                                    
+                                    <div className="form-group">
+                                        <label>Insurance Provider</label>
+                                        <select value={insuranceProvider} onChange={(e) => setInsuranceProvider(e.target.value)}>
+                                            <option value="">Select provider (optional)</option>
+                                            {insuranceList.map(ins => (
+                                                <option key={ins.id} value={ins.name}>{ins.name}</option>
+                                            ))}
+                                            <option value="Other">Other</option>
+                                            <option value="Self-Pay">Self-Pay (No Insurance)</option>
+                                        </select>
+                                    </div>
+                                    {insuranceProvider && insuranceProvider !== 'Self-Pay' && (
+                                        <>
+                                            <div className="form-group">
+                                                <label>Member ID</label>
+                                                <input type="text" value={memberId} onChange={(e) => setMemberId(e.target.value)} placeholder="Found on your insurance card" />
+                                            </div>
+                                            <div className="form-group">
+                                                <label>Group Number</label>
+                                                <input type="text" value={groupNumber} onChange={(e) => setGroupNumber(e.target.value)} placeholder="Optional" />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            <button type="submit" className="btn btn-primary" style={{width: '100%', marginTop: '1.5rem'}} disabled={loading}>
+                                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                            </button>
+                        </form>
+
+                        <p style={{textAlign: 'center', marginTop: '1.5rem', color: 'var(--text-light)'}}>
+                            {isLogin ? "Don't have an account? " : "Already have an account? "}
+                            <a href="#" onClick={(e) => { e.preventDefault(); setIsLogin(!isLogin); }} style={{color: 'var(--primary)', fontWeight: '600'}}>
+                                {isLogin ? 'Sign up' : 'Sign in'}
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ NURSE APPLICATION PAGE ============
+        function NurseApplicationPage({ user, setPage }) {
+            const [step, setStep] = useState(1);
+            const [loading, setLoading] = useState(false);
+            const [message, setMessage] = useState({ type: '', text: '' });
+            const [insuranceList, setInsuranceList] = useState([]);
+            
+            const [form, setForm] = useState({
+                licenseNumber: '',
+                licenseState: 'NY',
+                yearsExperience: '',
+                bio: '',
+                city: '',
+                state: 'NY',
+                zipCode: '',
+                hourlyRate: '',
+                languages: ['English'],
+                credentials: ['RN'],
+                specialties: [],
+                insurance: []
+            });
+
+            useEffect(() => {
+                supabase.from('insurance_providers').select('*').then(({ data }) => setInsuranceList(data || []));
+            }, []);
+
+            function update(field, value) {
+                setForm({ ...form, [field]: value });
+            }
+
+            function toggleArray(field, value) {
+                const arr = form[field];
+                if (arr.includes(value)) {
+                    update(field, arr.filter(v => v !== value));
+                } else {
+                    update(field, [...arr, value]);
+                }
+            }
+
+            async function handleSubmit() {
+                setLoading(true);
+                setMessage({ type: '', text: '' });
+
+                try {
+                    const { data: nurseData, error: nurseError } = await supabase
+                        .from('nurses')
+                        .insert([{
+                            user_id: user.id,
+                            license_number: form.licenseNumber,
+                            license_state: form.licenseState,
+                            credentials: form.credentials,
+                            years_experience: parseInt(form.yearsExperience),
+                            specialties: form.specialties,
+                            bio: form.bio,
+                            city: form.city,
+                            state: form.state,
+                            zip_code: form.zipCode,
+                            hourly_rate: parseFloat(form.hourlyRate),
+                            languages: form.languages,
+                            profile_approved: false,
+                            avatar_emoji: '👩‍⚕️'
+                        }])
+                        .select()
+                        .single();
+
+                    if (nurseError) throw nurseError;
+
+                    if (form.insurance.length > 0) {
+                        const records = form.insurance.map(name => ({ nurse_id: nurseData.id, provider_name: name }));
+                        await supabase.from('nurse_insurance').insert(records);
+                    }
+
+                    setMessage({ type: 'success', text: 'Application submitted! We\'ll review and get back to you soon.' });
+                    setTimeout(() => setPage('dashboard'), 2000);
+                } catch (err) {
+                    setMessage({ type: 'error', text: err.message });
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            const specialties = ['Postpartum Care', 'Newborn Care', 'Lactation Support', 'Elderly Care', 'Chronic Disease Management', 'Wound Care', 'Post-Surgery Care', 'IV Therapy', 'Rehabilitation', 'Dementia Care', 'Palliative Care'];
+            const credentials = ['RN', 'LPN', 'BSN', 'MSN', 'NP', 'IBCLC', 'CNA', 'CPR Certified'];
+            const languages = ['English', 'Spanish', 'Mandarin', 'French', 'Portuguese', 'Arabic', 'Russian'];
+
+            return (
+                <div className="page">
+                    <div className="container" style={{maxWidth: '800px'}}>
+                        <h1 style={{marginBottom: '0.5rem'}}>Nurse Application</h1>
+                        <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Complete your profile to start connecting with families</p>
+
+                        {message.text && <div className={`alert alert-${message.type}`}>{message.text}</div>}
+
+                        <div className="progress-bar">
+                            <div className={`step ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>
+                                <div className="step-num">1</div>
+                                <div className="step-label">License</div>
+                            </div>
+                            <div className={`step ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
+                                <div className="step-num">2</div>
+                                <div className="step-label">Experience</div>
+                            </div>
+                            <div className={`step ${step >= 3 ? 'active' : ''} ${step > 3 ? 'done' : ''}`}>
+                                <div className="step-num">3</div>
+                                <div className="step-label">Services</div>
+                            </div>
+                            <div className={`step ${step >= 4 ? 'active' : ''}`}>
+                                <div className="step-num">4</div>
+                                <div className="step-label">Insurance</div>
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            {step === 1 && (
+                                <>
+                                    <h2 style={{marginBottom: '1.5rem'}}>License Information</h2>
+                                    <div className="form-group">
+                                        <label>License Number *</label>
+                                        <input type="text" value={form.licenseNumber} onChange={(e) => update('licenseNumber', e.target.value)} placeholder="Your RN/LPN license number" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>License State *</label>
+                                        <select value={form.licenseState} onChange={(e) => update('licenseState', e.target.value)}>
+                                            <option value="NY">New York</option>
+                                            <option value="CA">California</option>
+                                            <option value="TX">Texas</option>
+                                            <option value="FL">Florida</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Credentials</label>
+                                        <div className="checkbox-group">
+                                            {credentials.map(c => (
+                                                <div className="checkbox-item" key={c}>
+                                                    <input type="checkbox" checked={form.credentials.includes(c)} onChange={() => toggleArray('credentials', c)} />
+                                                    <label>{c}</label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button className="btn btn-primary" onClick={() => setStep(2)}>Next →</button>
+                                </>
+                            )}
+
+                            {step === 2 && (
+                                <>
+                                    <h2 style={{marginBottom: '1.5rem'}}>Your Experience</h2>
+                                    <div className="form-group">
+                                        <label>Years of Experience *</label>
+                                        <input type="number" value={form.yearsExperience} onChange={(e) => update('yearsExperience', e.target.value)} min="0" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Bio *</label>
+                                        <textarea value={form.bio} onChange={(e) => update('bio', e.target.value)} placeholder="Tell families about your experience and approach to care..." />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Languages</label>
+                                        <div className="checkbox-group">
+                                            {languages.map(l => (
+                                                <div className="checkbox-item" key={l}>
+                                                    <input type="checkbox" checked={form.languages.includes(l)} onChange={() => toggleArray('languages', l)} />
+                                                    <label>{l}</label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{display: 'flex', gap: '1rem'}}>
+                                        <button className="btn btn-secondary" onClick={() => setStep(1)}>← Back</button>
+                                        <button className="btn btn-primary" onClick={() => setStep(3)}>Next →</button>
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 3 && (
+                                <>
+                                    <h2 style={{marginBottom: '1.5rem'}}>Services & Location</h2>
+                                    <div className="form-group">
+                                        <label>Specialties</label>
+                                        <div className="checkbox-group">
+                                            {specialties.map(s => (
+                                                <div className="checkbox-item" key={s}>
+                                                    <input type="checkbox" checked={form.specialties.includes(s)} onChange={() => toggleArray('specialties', s)} />
+                                                    <label>{s}</label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem'}}>
+                                        <div className="form-group">
+                                            <label>City *</label>
+                                            <input type="text" value={form.city} onChange={(e) => update('city', e.target.value)} />
+                                        </div>
+                                        <div className="form-group">
+                                            <label>State *</label>
+                                            <select value={form.state} onChange={(e) => update('state', e.target.value)}>
+                                                <option value="NY">NY</option>
+                                                <option value="CA">CA</option>
+                                                <option value="TX">TX</option>
+                                                <option value="FL">FL</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label>ZIP *</label>
+                                            <input type="text" value={form.zipCode} onChange={(e) => update('zipCode', e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Hourly Rate ($) *</label>
+                                        <input type="number" value={form.hourlyRate} onChange={(e) => update('hourlyRate', e.target.value)} placeholder="e.g., 85" />
+                                        <small style={{color: 'var(--text-light)'}}>You keep 80% after platform fee</small>
+                                    </div>
+                                    <div style={{display: 'flex', gap: '1rem'}}>
+                                        <button className="btn btn-secondary" onClick={() => setStep(2)}>← Back</button>
+                                        <button className="btn btn-primary" onClick={() => setStep(4)}>Next →</button>
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 4 && (
+                                <>
+                                    <h2 style={{marginBottom: '1.5rem'}}>Insurance Accepted</h2>
+                                    <p style={{color: 'var(--text-light)', marginBottom: '1.5rem'}}>Select insurance providers you accept:</p>
+                                    <div className="checkbox-group" style={{marginBottom: '2rem'}}>
+                                        {insuranceList.map(ins => (
+                                            <div className="checkbox-item" key={ins.id}>
+                                                <input type="checkbox" checked={form.insurance.includes(ins.name)} onChange={() => toggleArray('insurance', ins.name)} />
+                                                <label>{ins.name}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    <div style={{background: 'var(--bg-alt)', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem'}}>
+                                        <strong>Review Your Application:</strong>
+                                        <div style={{marginTop: '0.5rem', fontSize: '0.95rem', color: 'var(--text-light)'}}>
+                                            <p>✓ License: {form.licenseState} #{form.licenseNumber}</p>
+                                            <p>✓ Experience: {form.yearsExperience} years</p>
+                                            <p>✓ Specialties: {form.specialties.length} selected</p>
+                                            <p>✓ Rate: ${form.hourlyRate}/hr</p>
+                                            <p>✓ Insurance: {form.insurance.length} providers</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{display: 'flex', gap: '1rem'}}>
+                                        <button className="btn btn-secondary" onClick={() => setStep(3)}>← Back</button>
+                                        <button className="btn btn-primary" onClick={handleSubmit} disabled={loading}>
+                                            {loading ? 'Submitting...' : 'Submit Application'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ DASHBOARD PAGE ============
+        function DashboardPage({ user, setPage, setSelectedNurse }) {
+            const [nurseData, setNurseData] = useState(null);
+            const [patientData, setPatientData] = useState(null);
+            const [editingInsurance, setEditingInsurance] = useState(false);
+            const [insuranceForm, setInsuranceForm] = useState({});
+            const [insuranceList, setInsuranceList] = useState([]);
+            const [saving, setSaving] = useState(false);
+
+            useEffect(() => {
+                if (user?.user_type === 'nurse') {
+                    supabase.from('nurses').select('*').eq('user_id', user.id).single()
+                        .then(({ data }) => setNurseData(data));
+                }
+                if (user?.user_type === 'patient') {
+                    supabase.from('patients').select('*').eq('user_id', user.id).single()
+                        .then(({ data }) => {
+                            setPatientData(data);
+                            setInsuranceForm({
+                                provider: data?.insurance_provider || '',
+                                memberId: data?.insurance_member_id || '',
+                                groupNumber: data?.insurance_group_number || ''
+                            });
+                        });
+                    supabase.from('insurance_providers').select('*').then(({ data }) => setInsuranceList(data || []));
+                }
+            }, [user]);
+
+            async function saveInsurance() {
+                setSaving(true);
+                try {
+                    await supabase.from('patients').update({
+                        insurance_provider: insuranceForm.provider || null,
+                        insurance_member_id: insuranceForm.memberId || null,
+                        insurance_group_number: insuranceForm.groupNumber || null
+                    }).eq('user_id', user.id);
+                    
+                    setPatientData({...patientData, 
+                        insurance_provider: insuranceForm.provider,
+                        insurance_member_id: insuranceForm.memberId,
+                        insurance_group_number: insuranceForm.groupNumber
+                    });
+                    setEditingInsurance(false);
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    setSaving(false);
+                }
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <h1 style={{marginBottom: '2rem'}}>Welcome, {user?.first_name}!</h1>
+                        
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem'}}>
+                            <div className="card" style={{textAlign: 'center'}}>
+                                <div style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>👤</div>
+                                <h3>{user?.first_name} {user?.last_name}</h3>
+                                <p style={{color: 'var(--text-light)', textTransform: 'capitalize'}}>{user?.user_type}</p>
+                                <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{user?.email}</p>
+                            </div>
+                            
+                            {user?.user_type === 'patient' && (
+                                <>
+                                    <div className="card" style={{textAlign: 'center'}}>
+                                        <div style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>📅</div>
+                                        <h3>0</h3>
+                                        <p style={{color: 'var(--text-light)'}}>Appointments</p>
+                                    </div>
+                                    <div className="card" style={{textAlign: 'center'}}>
+                                        <div style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>
+                                            {patientData?.insurance_verified ? '✅' : '💳'}
+                                        </div>
+                                        <h3>{patientData?.insurance_provider || 'Not Set'}</h3>
+                                        <p style={{color: 'var(--text-light)'}}>
+                                            {patientData?.insurance_verified ? 'Verified' : 'Insurance'}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                            
+                            {user?.user_type === 'nurse' && nurseData && (
+                                <>
+                                    <div className="card" style={{textAlign: 'center'}}>
+                                        <div style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>💰</div>
+                                        <h3>${nurseData.hourly_rate}/hr</h3>
+                                        <p style={{color: 'var(--text-light)'}}>Your Rate</p>
+                                    </div>
+                                    <div className="card" style={{textAlign: 'center'}}>
+                                        <div style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>⭐</div>
+                                        <h3>{nurseData.average_rating || 'New'}</h3>
+                                        <p style={{color: 'var(--text-light)'}}>{nurseData.total_reviews || 0} Reviews</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {user?.user_type === 'nurse' && nurseData && !nurseData.profile_approved && (
+                            <div className="alert alert-warning">
+                                <strong>⏳ Application Pending Review</strong>
+                                <p style={{marginTop: '0.5rem'}}>We're reviewing your profile. You'll be notified once approved!</p>
+                            </div>
+                        )}
+
+                        {user?.user_type === 'nurse' && nurseData && nurseData.profile_approved && (
+                            <div className="alert alert-success">
+                                <strong>✅ Profile Approved!</strong>
+                                <p style={{marginTop: '0.5rem'}}>Your profile is live and patients can find you.</p>
+                            </div>
+                        )}
+
+                        {user?.user_type === 'patient' && (
+                            <>
+                                <div className="card" style={{marginBottom: '1.5rem'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                                        <h3>💳 Insurance Information</h3>
+                                        {!editingInsurance && (
+                                            <button className="btn btn-secondary" onClick={() => setEditingInsurance(true)}>
+                                                {patientData?.insurance_provider ? 'Edit' : 'Add Insurance'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {editingInsurance ? (
+                                        <div>
+                                            <div className="form-group">
+                                                <label>Insurance Provider</label>
+                                                <select value={insuranceForm.provider} onChange={(e) => setInsuranceForm({...insuranceForm, provider: e.target.value})}>
+                                                    <option value="">Select provider...</option>
+                                                    {insuranceList.map(ins => (
+                                                        <option key={ins.id} value={ins.name}>{ins.name}</option>
+                                                    ))}
+                                                    <option value="Other">Other</option>
+                                                    <option value="Self-Pay">Self-Pay (No Insurance)</option>
+                                                </select>
+                                            </div>
+                                            {insuranceForm.provider && insuranceForm.provider !== 'Self-Pay' && (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label>Member ID</label>
+                                                        <input type="text" value={insuranceForm.memberId} onChange={(e) => setInsuranceForm({...insuranceForm, memberId: e.target.value})} placeholder="Found on your insurance card" />
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label>Group Number</label>
+                                                        <input type="text" value={insuranceForm.groupNumber} onChange={(e) => setInsuranceForm({...insuranceForm, groupNumber: e.target.value})} placeholder="Optional" />
+                                                    </div>
+                                                </>
+                                            )}
+                                            <div style={{display: 'flex', gap: '1rem'}}>
+                                                <button className="btn btn-primary" onClick={saveInsurance} disabled={saving}>
+                                                    {saving ? 'Saving...' : 'Save'}
+                                                </button>
+                                                <button className="btn btn-secondary" onClick={() => setEditingInsurance(false)}>Cancel</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            {patientData?.insurance_provider ? (
+                                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem'}}>
+                                                    <div>
+                                                        <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>Provider</p>
+                                                        <p style={{fontWeight: '600'}}>{patientData.insurance_provider}</p>
+                                                    </div>
+                                                    {patientData.insurance_member_id && (
+                                                        <div>
+                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>Member ID</p>
+                                                            <p style={{fontWeight: '600'}}>{patientData.insurance_member_id}</p>
+                                                        </div>
+                                                    )}
+                                                    {patientData.insurance_group_number && (
+                                                        <div>
+                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>Group #</p>
+                                                            <p style={{fontWeight: '600'}}>{patientData.insurance_group_number}</p>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>Status</p>
+                                                        <p style={{fontWeight: '600', color: patientData.insurance_verified ? 'var(--success)' : 'var(--warning)'}}>
+                                                            {patientData.insurance_verified ? '✓ Verified' : '⏳ Pending Verification'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p style={{color: 'var(--text-light)'}}>No insurance information on file. Add your insurance to find in-network nurses.</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="card">
+                                    <h3 style={{marginBottom: '1rem'}}>Quick Actions</h3>
+                                    <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                                        <button className="btn btn-primary" onClick={() => setPage('search-choice')}>Find a Nurse</button>
+                                        <button className="btn btn-secondary" onClick={() => setPage('reviews')}>Read Reviews</button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {user?.user_type === 'nurse' && !nurseData && (
+                            <div className="card" style={{textAlign: 'center'}}>
+                                <h3>Complete Your Profile</h3>
+                                <p style={{color: 'var(--text-light)', margin: '1rem 0'}}>You haven't completed your nurse application yet.</p>
+                                <button className="btn btn-primary" onClick={() => setPage('nurse-application')}>Complete Application</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ BOOKING PAGE ============
+        function BookingPage({ nurse, user, setPage }) {
+            const [patientData, setPatientData] = useState(null);
+            const [form, setForm] = useState({
+                date: '',
+                time: '',
+                duration: '2',
+                serviceType: '',
+                notes: '',
+                address: ''
+            });
+            const [submitted, setSubmitted] = useState(false);
+            const [loading, setLoading] = useState(false);
+
+            useEffect(() => {
+                if (user) {
+                    supabase.from('patients').select('*').eq('user_id', user.id).single()
+                        .then(({ data }) => setPatientData(data));
+                }
+            }, [user]);
+
+            async function handleSubmit(e) {
+                e.preventDefault();
+                setLoading(true);
+
+                try {
+                    await supabase.from('appointments').insert([{
+                        patient_id: patientData?.id,
+                        nurse_id: nurse.id,
+                        appointment_date: form.date,
+                        appointment_time: form.time,
+                        duration_hours: parseInt(form.duration),
+                        service_type: form.serviceType,
+                        notes: form.notes,
+                        address: form.address,
+                        status: 'pending',
+                        total_amount: nurse.hourly_rate * parseInt(form.duration)
+                    }]);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            if (!nurse) {
+                return (
+                    <div className="page">
+                        <div className="container">
+                            <div className="card" style={{textAlign: 'center'}}>
+                                <p>No nurse selected.</p>
+                                <button className="btn btn-primary" onClick={() => setPage('search-choice')}>Find a Nurse</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (submitted) {
+                return (
+                    <div className="page">
+                        <div className="container">
+                            <div className="card" style={{maxWidth: '600px', margin: '0 auto', textAlign: 'center', padding: '4rem 2rem'}}>
+                                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>✅</div>
+                                <h1 style={{marginBottom: '1rem'}}>Booking Request Sent!</h1>
+                                <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>
+                                    Your appointment request has been sent to {nurse.user?.first_name}. They will confirm within 24 hours.
+                                </p>
+                                <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                                    <button className="btn btn-primary" onClick={() => setPage('dashboard')}>Go to Dashboard</button>
+                                    <button className="btn btn-secondary" onClick={() => setPage('home')}>Back to Home</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <button className="btn btn-secondary" onClick={() => setPage('nurse-profile')} style={{marginBottom: '2rem'}}>
+                            ← Back to Profile
+                        </button>
+
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem'}}>
+                            <div>
+                                <h1 style={{marginBottom: '0.5rem'}}>Book Appointment</h1>
+                                <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>Schedule care with {nurse.user?.first_name}</p>
+
+                                <form onSubmit={handleSubmit}>
+                                    <div className="form-group">
+                                        <label>Preferred Date *</label>
+                                        <input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} required min={new Date().toISOString().split('T')[0]} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Preferred Time *</label>
+                                        <select value={form.time} onChange={(e) => setForm({...form, time: e.target.value})} required>
+                                            <option value="">Select time...</option>
+                                            <option value="08:00">8:00 AM</option>
+                                            <option value="09:00">9:00 AM</option>
+                                            <option value="10:00">10:00 AM</option>
+                                            <option value="11:00">11:00 AM</option>
+                                            <option value="12:00">12:00 PM</option>
+                                            <option value="13:00">1:00 PM</option>
+                                            <option value="14:00">2:00 PM</option>
+                                            <option value="15:00">3:00 PM</option>
+                                            <option value="16:00">4:00 PM</option>
+                                            <option value="17:00">5:00 PM</option>
+                                            <option value="18:00">6:00 PM</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Duration *</label>
+                                        <select value={form.duration} onChange={(e) => setForm({...form, duration: e.target.value})} required>
+                                            <option value="1">1 hour</option>
+                                            <option value="2">2 hours</option>
+                                            <option value="3">3 hours</option>
+                                            <option value="4">4 hours</option>
+                                            <option value="6">6 hours</option>
+                                            <option value="8">8 hours (full day)</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Type of Care *</label>
+                                        <select value={form.serviceType} onChange={(e) => setForm({...form, serviceType: e.target.value})} required>
+                                            <option value="">Select service...</option>
+                                            {nurse.specialties?.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Care Address *</label>
+                                        <input type="text" value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} placeholder="Where should the nurse come?" required />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Additional Notes</label>
+                                        <textarea value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} placeholder="Any special requirements or information..." />
+                                    </div>
+
+                                    <button type="submit" className="btn btn-primary" style={{width: '100%'}} disabled={loading}>
+                                        {loading ? 'Submitting...' : 'Request Appointment'}
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div>
+                                <div className="card" style={{marginBottom: '1.5rem'}}>
+                                    <h3 style={{marginBottom: '1rem'}}>Booking Summary</h3>
+                                    <div style={{display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)'}}>
+                                        <div style={{fontSize: '3rem'}}>{nurse.avatar_emoji || '👩‍⚕️'}</div>
+                                        <div>
+                                            <h4>{nurse.user?.first_name} {nurse.user?.last_name}</h4>
+                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{nurse.credentials?.join(', ')}</p>
+                                        </div>
+                                    </div>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                                        <span>Hourly Rate:</span>
+                                        <strong>${nurse.hourly_rate}/hr</strong>
+                                    </div>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                                        <span>Duration:</span>
+                                        <strong>{form.duration} hour{form.duration !== '1' ? 's' : ''}</strong>
+                                    </div>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)'}}>
+                                        <span style={{fontWeight: '600'}}>Estimated Total:</span>
+                                        <strong style={{color: 'var(--primary)', fontSize: '1.25rem'}}>${nurse.hourly_rate * parseInt(form.duration)}</strong>
+                                    </div>
+                                </div>
+
+                                {patientData?.insurance_provider && (
+                                    <div className="card" style={{background: 'var(--bg-alt)'}}>
+                                        <h4 style={{marginBottom: '0.5rem'}}>💳 Your Insurance</h4>
+                                        <p style={{fontWeight: '600'}}>{patientData.insurance_provider}</p>
+                                        {patientData.insurance_member_id && (
+                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>Member ID: {patientData.insurance_member_id}</p>
+                                        )}
+                                        <p style={{color: patientData.insurance_verified ? 'var(--success)' : 'var(--warning)', fontSize: '0.9rem', marginTop: '0.5rem'}}>
+                                            {patientData.insurance_verified ? '✓ Verified' : '⏳ Pending verification'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {!patientData?.insurance_provider && (
+                                    <div className="card" style={{background: 'var(--bg-alt)'}}>
+                                        <h4 style={{marginBottom: '0.5rem'}}>💳 No Insurance on File</h4>
+                                        <p style={{color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '1rem'}}>Add insurance in your dashboard to check coverage.</p>
+                                        <button className="btn btn-secondary" onClick={() => setPage('dashboard')}>Add Insurance</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ ABOUT US PAGE ============
+        function AboutPage({ setPage }) {
+            return (
+                <div className="page">
+                    <div className="container">
+                        <div style={{textAlign: 'center', marginBottom: '3rem'}}>
+                            <h1 style={{fontSize: '3rem', marginBottom: '1rem'}}>About Pamily Private Care</h1>
+                            <p style={{fontSize: '1.2rem', color: 'var(--text-light)', maxWidth: '700px', margin: '0 auto'}}>
+                                Connecting families with trusted, qualified nurses for personalized home care.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '2rem'}}>
+                            <h2 style={{marginBottom: '1rem'}}>Our Mission</h2>
+                            <p style={{lineHeight: 1.8, fontSize: '1.1rem'}}>
+                                At Pamily Private Care, we believe every family deserves access to quality healthcare in the comfort of their own home. We connect patients with verified, experienced nurses who provide compassionate, personalized care tailored to each family's unique needs.
+                            </p>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '2rem'}}>
+                            <h2 style={{marginBottom: '1.5rem'}}>How It Works</h2>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem'}}>
+                                <div style={{textAlign: 'center'}}>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>🔍</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>1. Search</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Find nurses by location or insurance. Filter by specialty and read reviews.</p>
+                                </div>
+                                <div style={{textAlign: 'center'}}>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📋</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>2. Choose</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Review nurse profiles, credentials, and ratings to find your perfect match.</p>
+                                </div>
+                                <div style={{textAlign: 'center'}}>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📅</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>3. Book</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Schedule appointments that fit your needs. Communicate directly with your nurse.</p>
+                                </div>
+                                <div style={{textAlign: 'center'}}>
+                                    <div style={{fontSize: '3rem', marginBottom: '1rem'}}>💚</div>
+                                    <h3 style={{marginBottom: '0.5rem'}}>4. Care</h3>
+                                    <p style={{color: 'var(--text-light)'}}>Receive quality care at home. Leave reviews to help other families.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card" style={{marginBottom: '2rem'}}>
+                            <h2 style={{marginBottom: '1.5rem'}}>Why Choose Us</h2>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem'}}>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
+                                    <div style={{fontSize: '1.5rem'}}>✓</div>
+                                    <div>
+                                        <h4 style={{marginBottom: '0.25rem'}}>Verified Nurses</h4>
+                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>All nurses are licensed, background-checked, and credential-verified.</p>
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
+                                    <div style={{fontSize: '1.5rem'}}>🛡️</div>
+                                    <div>
+                                        <h4 style={{marginBottom: '0.25rem'}}>HIPAA Compliant</h4>
+                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Your health information is always protected and secure.</p>
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
+                                    <div style={{fontSize: '1.5rem'}}>💳</div>
+                                    <div>
+                                        <h4 style={{marginBottom: '0.25rem'}}>Insurance Accepted</h4>
+                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Many nurses accept major insurance providers.</p>
+                                    </div>
+                                </div>
+                                <div style={{display: 'flex', gap: '1rem', alignItems: 'start'}}>
+                                    <div style={{fontSize: '1.5rem'}}>⭐</div>
+                                    <div>
+                                        <h4 style={{marginBottom: '0.25rem'}}>Trusted Reviews</h4>
+                                        <p style={{color: 'var(--text-light)', fontSize: '0.95rem'}}>Real reviews from verified patients help you choose.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card" style={{textAlign: 'center', background: 'var(--primary)', color: 'var(--white)'}}>
+                            <h2 style={{color: 'var(--white)', marginBottom: '1rem'}}>Ready to Get Started?</h2>
+                            <p style={{marginBottom: '1.5rem', opacity: 0.9}}>Find the perfect nurse for your family today.</p>
+                            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+                                <button className="btn" style={{background: 'var(--white)', color: 'var(--primary)'}} onClick={() => setPage('search-choice')}>
+                                    Find a Nurse
+                                </button>
+                                <button className="btn btn-secondary" style={{borderColor: 'var(--white)', color: 'var(--white)'}} onClick={() => setPage('contact')}>
+                                    Contact Us
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ CONTACT PAGE ============
+        function ContactPage({ setPage }) {
+            const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+            const [submitted, setSubmitted] = useState(false);
+            const [loading, setLoading] = useState(false);
+
+            async function handleSubmit(e) {
+                e.preventDefault();
+                setLoading(true);
+                
+                // Save to database (you can also connect this to email service via DNS)
+                try {
+                    await supabase.from('contact_messages').insert([{
+                        name: form.name,
+                        email: form.email,
+                        subject: form.subject,
+                        message: form.message
+                    }]);
+                    setSubmitted(true);
+                } catch (err) {
+                    console.error('Error:', err);
+                    // Still show success - form data can be handled by your email service
+                    setSubmitted(true);
+                } finally {
+                    setLoading(false);
+                }
+            }
+
+            if (submitted) {
+                return (
+                    <div className="page">
+                        <div className="container">
+                            <div className="card" style={{maxWidth: '600px', margin: '0 auto', textAlign: 'center', padding: '4rem 2rem'}}>
+                                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>✅</div>
+                                <h1 style={{marginBottom: '1rem'}}>Message Sent!</h1>
+                                <p style={{color: 'var(--text-light)', marginBottom: '2rem'}}>
+                                    Thank you for reaching out. We'll get back to you within 24-48 hours.
+                                </p>
+                                <button className="btn btn-primary" onClick={() => setPage('home')}>
+                                    Back to Home
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="page">
+                    <div className="container">
+                        <div style={{textAlign: 'center', marginBottom: '3rem'}}>
+                            <h1 style={{fontSize: '3rem', marginBottom: '1rem'}}>Contact Us</h1>
+                            <p style={{fontSize: '1.2rem', color: 'var(--text-light)'}}>
+                                Have questions? We're here to help.
+                            </p>
+                        </div>
+
+                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', maxWidth: '1000px', margin: '0 auto'}}>
+                            <div className="card">
+                                <h2 style={{marginBottom: '1.5rem'}}>Send a Message</h2>
+                                <form onSubmit={handleSubmit}>
+                                    <div className="form-group">
+                                        <label>Your Name *</label>
+                                        <input 
+                                            type="text" 
+                                            value={form.name} 
+                                            onChange={(e) => setForm({...form, name: e.target.value})}
+                                            required 
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Email Address *</label>
+                                        <input 
+                                            type="email" 
+                                            value={form.email} 
+                                            onChange={(e) => setForm({...form, email: e.target.value})}
+                                            required 
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Subject *</label>
+                                        <select 
+                                            value={form.subject} 
+                                            onChange={(e) => setForm({...form, subject: e.target.value})}
+                                            required
+                                        >
+                                            <option value="">Select a topic...</option>
+                                            <option value="General Inquiry">General Inquiry</option>
+                                            <option value="Patient Support">Patient Support</option>
+                                            <option value="Nurse Application">Nurse Application</option>
+                                            <option value="Insurance Questions">Insurance Questions</option>
+                                            <option value="Technical Support">Technical Support</option>
+                                            <option value="Partnership">Partnership</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Message *</label>
+                                        <textarea 
+                                            value={form.message} 
+                                            onChange={(e) => setForm({...form, message: e.target.value})}
+                                            placeholder="How can we help you?"
+                                            required
+                                        />
+                                    </div>
+                                    <button type="submit" className="btn btn-primary" style={{width: '100%'}} disabled={loading}>
+                                        {loading ? 'Sending...' : 'Send Message'}
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div>
+                                <div className="card" style={{marginBottom: '1.5rem'}}>
+                                    <h3 style={{marginBottom: '1rem'}}>💬 Quick Help</h3>
+                                    <p style={{color: 'var(--text-light)', marginBottom: '1rem'}}>Looking for something specific?</p>
+                                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                                        <a href="#" onClick={() => setPage('search-choice')} style={{color: 'var(--primary)'}}>→ Find a Nurse</a>
+                                        <a href="#" onClick={() => setPage('for-nurses')} style={{color: 'var(--primary)'}}>→ Become a Nurse</a>
+                                        <a href="#" onClick={() => setPage('about')} style={{color: 'var(--primary)'}}>→ How It Works</a>
+                                    </div>
+                                </div>
+                                <div className="card" style={{background: 'var(--bg-alt)'}}>
+                                    <h3 style={{marginBottom: '1rem'}}>⏰ Response Time</h3>
+                                    <p style={{color: 'var(--text-light)'}}>We typically respond within 24-48 hours.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ MAIN APP ============
+        function App() {
+            const [page, setPage] = useState('home');
+            const [user, setUser] = useState(null);
+            const [selectedNurse, setSelectedNurse] = useState(null);
+            const [searchMode, setSearchMode] = useState('location');
+            const [searchFilters, setSearchFilters] = useState({});
+
+            useEffect(() => {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    if (session) {
+                        supabase.from('users').select('*').eq('email', session.user.email).single()
+                            .then(({ data }) => setUser(data));
+                    }
+                });
+
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                    if (session) {
+                        supabase.from('users').select('*').eq('email', session.user.email).single()
+                            .then(({ data }) => setUser(data));
+                    } else {
+                        setUser(null);
+                    }
+                });
+
+                return () => subscription.unsubscribe();
+            }, []);
+
+            async function handleLogout() {
+                await supabase.auth.signOut();
+                setUser(null);
+                setPage('home');
+            }
+
+            return (
+                <>
+                    <Header setPage={setPage} user={user} onLogout={handleLogout} />
+                    
+                    {page === 'home' && <HomePage setPage={setPage} />}
+                    {page === 'search-choice' && <SearchChoicePage setPage={setPage} setSearchMode={setSearchMode} setSearchFilters={setSearchFilters} />}
+                    {page === 'browse' && <BrowseNursesPage setPage={setPage} setSelectedNurse={setSelectedNurse} searchMode={searchMode} searchFilters={searchFilters} />}
+                    {page === 'nurse-profile' && <NurseProfilePage nurse={selectedNurse} setPage={setPage} user={user} />}
+                    {page === 'booking' && <BookingPage nurse={selectedNurse} user={user} setPage={setPage} />}
+                    {page === 'for-nurses' && <ForNursesPage setPage={setPage} />}
+                    {page === 'reviews' && <ReviewsPage setPage={setPage} user={user} />}
+                    {page === 'login' && <LoginPage setPage={setPage} setUser={setUser} />}
+                    {page === 'nurse-application' && user && <NurseApplicationPage user={user} setPage={setPage} />}
+                    {page === 'dashboard' && user && <DashboardPage user={user} setPage={setPage} setSelectedNurse={setSelectedNurse} />}
+                    {page === 'about' && <AboutPage setPage={setPage} />}
+                    {page === 'contact' && <ContactPage setPage={setPage} />}
+                    
+                    <Footer setPage={setPage} />
+                </>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
