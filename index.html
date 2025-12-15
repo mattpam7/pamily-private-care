@@ -436,7 +436,13 @@
         // Supabase Setup
         const SUPABASE_URL = 'https://lubmuqfvgqdrwawkwhei.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx1Ym11cWZ2Z3Fkcndhd2t3aGVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NTMzMDksImV4cCI6MjA4MTMyOTMwOX0.sAkzavJSlXcLRs3gkWAvyzpEYffYwGloRQ0PzjuKXXE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: {
+                persistSession: true,
+                storageKey: 'pamily-auth',
+                storage: window.localStorage
+            }
+        });
 
         // ============ HEADER ============
         function Header({ setPage, user, onLogout }) {
@@ -1182,6 +1188,7 @@
             const [insuranceProvider, setInsuranceProvider] = useState('');
             const [memberId, setMemberId] = useState('');
             const [groupNumber, setGroupNumber] = useState('');
+            const [customInsurance, setCustomInsurance] = useState('');
             const [insuranceList, setInsuranceList] = useState([]);
             const [loading, setLoading] = useState(false);
             const [message, setMessage] = useState({ type: '', text: '' });
@@ -1234,9 +1241,10 @@
                         if (userError) throw userError;
 
                         if (userType === 'patient') {
+                            const finalInsurance = insuranceProvider === 'Other' ? customInsurance : insuranceProvider;
                             await supabase.from('patients').insert([{ 
                                 user_id: userData.id,
-                                insurance_provider: insuranceProvider || null,
+                                insurance_provider: finalInsurance || null,
                                 insurance_member_id: memberId || null,
                                 insurance_group_number: groupNumber || null,
                                 insurance_verified: false
@@ -1335,10 +1343,16 @@
                                             {insuranceList.map(ins => (
                                                 <option key={ins.id} value={ins.name}>{ins.name}</option>
                                             ))}
-                                            <option value="Other">Other</option>
+                                            <option value="Other">Other (type below)</option>
                                             <option value="Self-Pay">Self-Pay (No Insurance)</option>
                                         </select>
                                     </div>
+                                    {insuranceProvider === 'Other' && (
+                                        <div className="form-group">
+                                            <label>Insurance Name</label>
+                                            <input type="text" value={customInsurance} onChange={(e) => setCustomInsurance(e.target.value)} placeholder="Enter your insurance provider name" />
+                                        </div>
+                                    )}
                                     {insuranceProvider && insuranceProvider !== 'Self-Pay' && (
                                         <>
                                             <div className="form-group">
@@ -1695,6 +1709,11 @@
                 }
             }
 
+            async function updateAppointmentStatus(aptId, newStatus) {
+                await supabase.from('appointments').update({ status: newStatus }).eq('id', aptId);
+                setAppointments(appointments.map(a => a.id === aptId ? {...a, status: newStatus} : a));
+            }
+
             return (
                 <div className="page">
                     <div className="container">
@@ -1759,32 +1778,78 @@
 
                         {user?.user_type === 'nurse' && nurseData && (
                             <>
+                                {/* Quick Stats */}
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem'}}>
+                                    <div className="card" style={{textAlign: 'center', padding: '1rem'}}>
+                                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)'}}>{appointments.filter(a => a.status === 'pending').length}</div>
+                                        <div style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>Pending</div>
+                                    </div>
+                                    <div className="card" style={{textAlign: 'center', padding: '1rem'}}>
+                                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: 'var(--success)'}}>{appointments.filter(a => a.status === 'confirmed').length}</div>
+                                        <div style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>Confirmed</div>
+                                    </div>
+                                    <div className="card" style={{textAlign: 'center', padding: '1rem'}}>
+                                        <div style={{fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)'}}>${appointments.filter(a => a.status === 'confirmed').reduce((sum, a) => sum + (a.total_amount || 0), 0)}</div>
+                                        <div style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>Earnings</div>
+                                    </div>
+                                </div>
+
+                                {/* Appointments */}
                                 <div className="card" style={{marginBottom: '1.5rem'}}>
                                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
                                         <h3>📅 My Appointments</h3>
                                         <button className="btn btn-secondary" onClick={() => setPage('nurse-calendar')}>Manage Availability</button>
                                     </div>
                                     {appointments.length === 0 ? (
-                                        <p style={{color: 'var(--text-light)'}}>No upcoming appointments. When patients book you, they'll appear here.</p>
+                                        <div style={{textAlign: 'center', padding: '2rem'}}>
+                                            <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📭</div>
+                                            <p style={{color: 'var(--text-light)'}}>No appointments yet. When patients book you, they'll appear here.</p>
+                                        </div>
                                     ) : (
                                         <div>
-                                            {appointments.map(apt => (
-                                                <div key={apt.id} style={{padding: '1rem', background: 'var(--bg-alt)', borderRadius: '8px', marginBottom: '0.75rem'}}>
-                                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
-                                                        <div>
-                                                            <strong>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</strong>
-                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.service_type}</p>
+                                            {appointments.filter(a => a.status === 'pending').length > 0 && (
+                                                <div style={{marginBottom: '1.5rem'}}>
+                                                    <h4 style={{color: 'var(--warning)', marginBottom: '0.75rem'}}>⏳ Needs Response</h4>
+                                                    {appointments.filter(a => a.status === 'pending').map(apt => (
+                                                        <div key={apt.id} style={{padding: '1rem', background: 'rgba(255,193,7,0.1)', border: '1px solid var(--warning)', borderRadius: '8px', marginBottom: '0.75rem'}}>
+                                                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                                                                <div>
+                                                                    <strong>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</strong>
+                                                                    <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.service_type} • {apt.duration_hours}hr • ${apt.total_amount}</p>
+                                                                    <p style={{fontSize: '0.9rem', marginTop: '0.25rem'}}>📅 {apt.appointment_date} at {apt.appointment_time}</p>
+                                                                    {apt.address && <p style={{fontSize: '0.85rem', color: 'var(--text-light)'}}>📍 {apt.address}</p>}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.75rem'}}>
+                                                                <button className="btn btn-primary" style={{padding: '0.4rem 1rem', fontSize: '0.9rem'}} onClick={() => updateAppointmentStatus(apt.id, 'confirmed')}>✓ Confirm</button>
+                                                                <button className="btn btn-secondary" style={{padding: '0.4rem 1rem', fontSize: '0.9rem'}} onClick={() => updateAppointmentStatus(apt.id, 'cancelled')}>✗ Decline</button>
+                                                            </div>
                                                         </div>
-                                                        <div style={{textAlign: 'right'}}>
-                                                            <p style={{fontWeight: '600'}}>{apt.appointment_date}</p>
-                                                            <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.appointment_time} • {apt.duration_hours}hr</p>
-                                                        </div>
-                                                    </div>
-                                                    <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.75rem'}}>
-                                                        <span className="tag" style={{background: apt.status === 'confirmed' ? 'var(--success)' : apt.status === 'pending' ? 'var(--warning)' : 'var(--bg-alt)', color: apt.status === 'pending' ? 'var(--text)' : 'var(--white)'}}>{apt.status}</span>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                            ))}
+                                            )}
+                                            
+                                            {appointments.filter(a => a.status === 'confirmed').length > 0 && (
+                                                <div>
+                                                    <h4 style={{color: 'var(--success)', marginBottom: '0.75rem'}}>✅ Upcoming</h4>
+                                                    {appointments.filter(a => a.status === 'confirmed').map(apt => (
+                                                        <div key={apt.id} style={{padding: '1rem', background: 'var(--bg-alt)', borderRadius: '8px', marginBottom: '0.75rem'}}>
+                                                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+                                                                <div>
+                                                                    <strong>{apt.patient?.user?.first_name} {apt.patient?.user?.last_name}</strong>
+                                                                    <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.service_type}</p>
+                                                                </div>
+                                                                <div style={{textAlign: 'right'}}>
+                                                                    <p style={{fontWeight: '600'}}>{apt.appointment_date}</p>
+                                                                    <p style={{color: 'var(--text-light)', fontSize: '0.9rem'}}>{apt.appointment_time} • {apt.duration_hours}hr</p>
+                                                                </div>
+                                                            </div>
+                                                            {apt.address && <p style={{fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.5rem'}}>📍 {apt.address}</p>}
+                                                            {apt.notes && <p style={{fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '0.25rem'}}>Note: {apt.notes}</p>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
